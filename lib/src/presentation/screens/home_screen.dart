@@ -261,7 +261,7 @@ class _HomeScreenState extends State<HomeScreen> {
               color: Theme.of(context).colorScheme.primary,
             ),
             child: Text(
-              'Timer App',
+              'Tockee',
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 24,
@@ -334,7 +334,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Timer'),
+        title: const Text('Tockee'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       drawer: _buildDrawer(),

@@ -1,7 +1,28 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
 
-class AboutScreen extends StatelessWidget {
+class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
+
+  @override
+  State<AboutScreen> createState() => _AboutScreenState();
+}
+
+class _AboutScreenState extends State<AboutScreen> {
+  String _version = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadVersion();
+  }
+
+  Future<void> _loadVersion() async {
+    final packageInfo = await PackageInfo.fromPlatform();
+    setState(() {
+      _version = '${packageInfo.version}.${packageInfo.buildNumber}';
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -17,20 +38,30 @@ class AboutScreen extends StatelessWidget {
           children: [
             const SizedBox(height: 32),
             Container(
-              padding: const EdgeInsets.all(24),
+              width: 120,
+              height: 120,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withValues(alpha: 0.1),
+                    blurRadius: 8,
+                    offset: const Offset(0, 4),
+                  ),
+                ],
               ),
-              child: Icon(
-                Icons.timer,
-                size: 64,
-                color: Theme.of(context).colorScheme.primary,
+              child: ClipOval(
+                child: Image.asset(
+                  'assets/icon/app_icon.png',
+                  width: 120,
+                  height: 120,
+                  fit: BoxFit.cover,
+                ),
               ),
             ),
             const SizedBox(height: 24),
             Text(
-              'Timer App',
+              'Tockee',
               style: TextStyle(
                 fontSize: 28,
                 fontWeight: FontWeight.bold,
@@ -39,7 +70,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              'Version 0.0.1',
+              _version.isEmpty ? 'Chargement...' : 'Version $_version',
               style: TextStyle(
                 fontSize: 16,
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
@@ -87,7 +118,7 @@ class AboutScreen extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              'Développé avec ❤️ en Flutter',
+              'Copyright © 2025 ONLINE404.com',
               style: TextStyle(
                 fontSize: 14,
                 color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
