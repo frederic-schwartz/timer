@@ -23,6 +23,8 @@ import '../domain/usecases/resume_session.dart';
 import '../domain/usecases/set_recent_sessions_count.dart';
 import '../domain/usecases/start_timer.dart';
 import '../domain/usecases/stop_timer.dart';
+import '../domain/usecases/update_session_log.dart';
+import '../domain/usecases/update_session_times.dart';
 import '../domain/usecases/watch_timer_duration.dart';
 import '../domain/usecases/watch_timer_state.dart';
 
@@ -58,6 +60,8 @@ class AppDependencies {
   late final DeleteSessionLogs deleteSessionLogs;
   late final DeleteAllLogs deleteAllLogs;
   late final ClearCompletedSessions clearCompletedSessions;
+  late final UpdateSessionTimes updateSessionTimes;
+  late final UpdateSessionLog updateSessionLog;
 
   late final GetRecentSessionsCount getRecentSessionsCount;
   late final SetRecentSessionsCount setRecentSessionsCount;
@@ -91,6 +95,8 @@ class AppDependencies {
     deleteSessionLogs = DeleteSessionLogs(sessionRepository);
     deleteAllLogs = DeleteAllLogs(sessionRepository);
     clearCompletedSessions = ClearCompletedSessions(sessionRepository);
+    updateSessionTimes = UpdateSessionTimes(sessionRepository);
+    updateSessionLog = UpdateSessionLog(sessionRepository);
 
     getRecentSessionsCount = GetRecentSessionsCount(settingsRepository);
     setRecentSessionsCount = SetRecentSessionsCount(settingsRepository);

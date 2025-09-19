@@ -60,4 +60,10 @@ class SessionRepositoryImpl implements SessionRepository {
 
   @override
   Future<void> deleteAllLogs() => _localDataSource.deleteAllLogs();
+
+  @override
+  Future<void> updateSessionLog(SessionLog log) {
+    final model = SessionLogModel.fromEntity(log);
+    return _localDataSource.updateSessionLog(model);
+  }
 }

@@ -336,13 +336,17 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _RecentSessionCard(
               session: session,
               onResume: () => _controller.resumeSession(session),
-              onShowLogs: () {
-                Navigator.push(
+              onShowLogs: () async {
+                final shouldRefresh = await Navigator.push<bool>(
                   context,
                   MaterialPageRoute(
                     builder: (context) => SessionLogsScreen(session: session),
                   ),
                 );
+                if (shouldRefresh == true) {
+                  await _controller.loadRecentSessions();
+                  await _controller.refreshTimerSnapshot();
+                }
               },
               durationLabel: _formatDuration(session.currentDuration),
               startLabel: _formatDateTime(session.startTime),

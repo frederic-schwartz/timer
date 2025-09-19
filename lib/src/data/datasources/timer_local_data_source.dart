@@ -241,8 +241,6 @@ class TimerLocalDataSource {
       _currentSession!.copyWithModel(isRunning: false, isPaused: false),
     );
 
-    await _logAction(SessionAction.resumeSession, details: 'Préparation de la reprise');
-
     _stateController.add(TimerState.ready);
     _durationController.add(_frozenDuration ?? Duration.zero);
   }

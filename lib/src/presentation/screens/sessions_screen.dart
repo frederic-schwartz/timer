@@ -259,21 +259,24 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                                 ),
                                               ),
                                             ],
-                                            onSelected: (value) {
-                                              if (value == 'resume') {
-                                                _resumeSession(session);
-                                              } else if (value == 'logs') {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => SessionLogsScreen(session: session),
-                                                  ),
-                                                );
-                                              } else if (value == 'delete') {
-                                                _deleteSession(session);
-                                              }
-                                            },
-                                          ),
+                            onSelected: (value) async {
+                              if (value == 'resume') {
+                                _resumeSession(session);
+                              } else if (value == 'logs') {
+                                final shouldRefresh = await Navigator.push<bool>(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SessionLogsScreen(session: session),
+                                  ),
+                                );
+                                if (shouldRefresh == true) {
+                                  await _controller.loadSessions();
+                                }
+                              } else if (value == 'delete') {
+                                _deleteSession(session);
+                              }
+                            },
+                          ),
                                         ],
                                       ),
                                     );

@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 
 import '../../dependency_injection/service_locator.dart';
 import '../../domain/entities/session_log.dart';
+import '../../domain/entities/timer_session.dart';
 
 class SessionLogsController extends ChangeNotifier {
   SessionLogsController({AppDependencies? dependencies})
@@ -23,5 +24,31 @@ class SessionLogsController extends ChangeNotifier {
 
     _isLoading = false;
     notifyListeners();
+  }
+
+  Future<TimerSession> updateSessionTimes({
+    required TimerSession session,
+    required DateTime startTime,
+    DateTime? endTime,
+    Duration? totalPausedDuration,
+    bool? isRunning,
+    bool? isPaused,
+  }) {
+    return _dependencies.updateSessionTimes(
+      session: session,
+      startTime: startTime,
+      endTime: endTime,
+      totalPausedDuration: totalPausedDuration,
+      isRunning: isRunning,
+      isPaused: isPaused,
+    );
+  }
+
+  Future<void> updateLog(SessionLog log) {
+    return _dependencies.updateSessionLog(log);
+  }
+
+  Future<void> refreshTimerService() {
+    return _dependencies.initializeTimer();
   }
 }

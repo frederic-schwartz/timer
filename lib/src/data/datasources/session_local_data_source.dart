@@ -171,4 +171,17 @@ class SessionLocalDataSource {
     final db = await _db;
     await db.delete(_logsTableName);
   }
+
+  Future<void> updateSessionLog(SessionLogModel log) async {
+    if (log.id == null) {
+      throw ArgumentError('Cannot update log without id');
+    }
+    final db = await _db;
+    await db.update(
+      _logsTableName,
+      log.toMap(),
+      where: 'id = ?',
+      whereArgs: [log.id],
+    );
+  }
 }

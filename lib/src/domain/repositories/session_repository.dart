@@ -13,4 +13,5 @@ abstract class SessionRepository {
   Future<List<SessionLog>> getAllLogs();
   Future<void> deleteSessionLogs(int sessionId);
   Future<void> deleteAllLogs();
+  Future<void> updateSessionLog(SessionLog log);
 }

@@ -90,6 +90,11 @@ class HomeController extends ChangeNotifier {
     _updateSnapshot();
   }
 
+  Future<void> refreshTimerSnapshot() async {
+    await _dependencies.initializeTimer();
+    _updateSnapshot(notify: true);
+  }
+
   void _updateSnapshot({bool notify = false}) {
     final TimerSnapshot snapshot = _dependencies.getTimerSnapshot();
     _currentDuration = snapshot.currentDuration;

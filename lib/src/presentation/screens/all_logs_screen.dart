@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/session_log.dart';
 import '../controllers/all_logs_controller.dart';
 import '../widgets/glass_card.dart';
-import 'session_logs_screen.dart';
+import '../widgets/platform_map.dart';
 
 class AllLogsScreen extends StatefulWidget {
   const AllLogsScreen({super.key});
@@ -125,16 +125,92 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
     }
   }
 
-  void _showSessionDetails(SessionLog log) {
+  Future<void> _showLogDetails(SessionLog log) async {
     final session = _controller.sessionForLog(log);
-    if (session != null) {
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => SessionLogsScreen(session: session),
-        ),
-      );
-    }
+
+    await showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                log.action.displayName,
+                style: Theme.of(context).textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                    ),
+              ),
+              const SizedBox(height: 12),
+              Row(
+                children: [
+                  const Icon(Icons.schedule, size: 18),
+                  const SizedBox(width: 8),
+                  Text(_formatDateTime(log.timestamp)),
+                ],
+              ),
+              if (session != null) ...[
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    const Icon(Icons.timer_outlined, size: 18),
+                    const SizedBox(width: 8),
+                    Text('Session du ${_formatDateTime(session.startTime)}'),
+                  ],
+                ),
+              ],
+              if (log.details != null && log.details!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text(
+                  log.details!,
+                  style: Theme.of(context).textTheme.bodyMedium,
+                ),
+              ],
+              if (log.latitude != null && log.longitude != null) ...[
+                const SizedBox(height: 16),
+                SizedBox(
+                  height: 180,
+                  child: PlatformMap(
+                    center: PlatformMapMarker(
+                      latitude: log.latitude!,
+                      longitude: log.longitude!,
+                    ),
+                    markers: [
+                      PlatformMapMarker(
+                        latitude: log.latitude!,
+                        longitude: log.longitude!,
+                      ),
+                    ],
+                    zoom: 15,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  'Coordonnées: ${log.latitude!.toStringAsFixed(5)}, '
+                  '${log.longitude!.toStringAsFixed(5)}',
+                  style: Theme.of(context)
+                      .textTheme
+                      .bodySmall
+                      ?.copyWith(
+                        color: Theme.of(context)
+                            .colorScheme
+                            .onSurface
+                            .withValues(alpha: 0.6),
+                      ),
+                ),
+              ],
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
   }
 
   Widget _buildFilterChip({required String label, required String value}) {
@@ -211,7 +287,6 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
                       _buildFilterChip(label: 'Pauses', value: 'pause'),
                       _buildFilterChip(label: 'Reprises', value: 'resume'),
                       _buildFilterChip(label: 'Arrêts', value: 'stop'),
-                      _buildFilterChip(label: 'Reprise session', value: 'resume_session'),
                     ],
                   ),
                 ),
@@ -240,7 +315,7 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
 
                                   return GlassCard(
                                     padding: const EdgeInsets.all(18),
-                                    onTap: () => _showSessionDetails(log),
+                                    onTap: () => _showLogDetails(log),
                                     child: Row(
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
