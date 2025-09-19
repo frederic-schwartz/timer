@@ -60,6 +60,16 @@ class TimerService {
     return now.difference(_pauseStartTime!);
   }
 
+  Duration get totalPausedDurationRealTime {
+    // Returns total paused duration including current pause if active
+    final basePauseDuration = Duration(milliseconds: _totalPausedDuration);
+    if (_currentSession != null && _currentSession!.isPaused && _pauseStartTime != null) {
+      final currentPause = DateTime.now().difference(_pauseStartTime!);
+      return basePauseDuration + currentPause;
+    }
+    return basePauseDuration;
+  }
+
   Future<void> initialize() async {
     await _loadCurrentSession();
     await _loadPauseState();
@@ -80,8 +90,9 @@ class TimerService {
   Future<void> _loadPauseState() async {
     final prefs = await SharedPreferences.getInstance();
     final pauseStartTimeMs = prefs.getInt(_pauseStartTimeKey);
-    _totalPausedDuration = prefs.getInt(_totalPausedDurationKey) ?? 0;
 
+    // Don't overwrite _totalPausedDuration from database with SharedPreferences
+    // Only load pause start time if session is actually paused
     if (pauseStartTimeMs != null && _currentSession != null && _currentSession!.isPaused) {
       _pauseStartTime = DateTime.fromMillisecondsSinceEpoch(pauseStartTimeMs);
       // Don't add time since app closure - this time doesn't count as "pause time"
@@ -110,11 +121,14 @@ class TimerService {
 
   Future<void> startTimer() async {
     if (_currentSession == null) {
-      // Start new session
+      // Start new session - reset to zero
       final session = TimerSession(startTime: DateTime.now());
       final id = await DatabaseService.insertSession(session);
       _currentSession = session.copyWith(id: id);
       _totalPausedDuration = 0;
+
+      // Reset display to zero for new session
+      _durationController.add(Duration.zero);
     } else if (_currentSession!.isPaused) {
       // Resume from pause
       if (_pauseStartTime != null) {
@@ -131,10 +145,13 @@ class TimerService {
     } else if (!_currentSession!.isRunning) {
       // Resume from ready state (resumed session)
       if (_frozenDuration != null) {
-        // Adjust start time to account for the frozen duration
+        // Calculate total elapsed time: frozen duration + paused duration
+        final totalElapsedTime = _frozenDuration! + Duration(milliseconds: _totalPausedDuration);
+
+        // Adjust start time to account for the total elapsed time
         _currentSession = _currentSession!.copyWith(
           isRunning: true,
-          startTime: DateTime.now().subtract(_frozenDuration!),
+          startTime: DateTime.now().subtract(totalElapsedTime),
         );
         _frozenDuration = null; // Clear frozen duration
       } else {
@@ -165,27 +182,47 @@ class TimerService {
 
   Future<void> stopTimer() async {
     if (_currentSession != null) {
-      // If paused, add final pause duration
-      if (_pauseStartTime != null) {
-        final pauseDuration = DateTime.now().difference(_pauseStartTime!).inMilliseconds;
-        _totalPausedDuration += pauseDuration;
+      DateTime endTime;
+
+      // If session was in ready state (not running), use the frozen duration to calculate end time
+      if (!_currentSession!.isRunning && _frozenDuration != null) {
+        // For ready sessions, end time should be start time + frozen duration
+        endTime = _currentSession!.startTime.add(_frozenDuration!);
+      } else {
+        // For running/paused sessions, use current time
+        endTime = DateTime.now();
+
+        // If paused, add final pause duration
+        if (_pauseStartTime != null) {
+          final pauseDuration = DateTime.now().difference(_pauseStartTime!).inMilliseconds;
+          _totalPausedDuration += pauseDuration;
+        }
       }
 
       final endedSession = _currentSession!.copyWith(
-        endTime: DateTime.now(),
+        endTime: endTime,
         isRunning: false,
         isPaused: false,
         totalPausedDuration: _totalPausedDuration,
       );
 
       await DatabaseService.updateSession(endedSession);
+
+      // Calculate final duration to display
+      final finalDuration = endTime.difference(_currentSession!.startTime).inMilliseconds - _totalPausedDuration;
+
       _currentSession = null;
       _pauseStartTime = null;
       _totalPausedDuration = 0;
       _frozenDuration = null; // Clear frozen duration
 
-      await _savePauseState();
-      _durationController.add(Duration.zero);
+      // Clear SharedPreferences when stopping
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove(_pauseStartTimeKey);
+      await prefs.remove(_totalPausedDurationKey);
+
+      // Keep the final duration displayed instead of going to zero
+      _durationController.add(Duration(milliseconds: finalDuration));
       _stateController.add(TimerState.stopped);
     }
   }
@@ -194,27 +231,30 @@ class TimerService {
     // Stop any current session
     await stopTimer();
 
-    // Create a new session that continues from the previous one but starts ready
-    final newSession = TimerSession(
-      startTime: DateTime.now(),
-      totalPausedDuration: 0,
+    // Reactivate the original session instead of creating a new one
+    _currentSession = session.copyWith(
       isRunning: false, // Not running yet, just ready
       isPaused: false,
+      endTime: null, // Clear end time to make it active again
     );
 
-    final id = await DatabaseService.insertSession(newSession);
-    _currentSession = newSession.copyWith(id: id);
-    _totalPausedDuration = 0;
+    // Restore the total paused duration from the session
+    _totalPausedDuration = session.totalPausedDuration;
 
-    // Store the previous session duration as frozen duration
+    // Store the session duration as frozen duration
     final previousDuration = session.currentDuration;
     _frozenDuration = previousDuration;
 
     // No pause start time - this is a resumed session, not a paused one
     _pauseStartTime = null;
 
+    // Update the existing session in database to mark it as active again
     await DatabaseService.updateSession(_currentSession!);
-    await _savePauseState();
+
+    // Clear any old SharedPreferences data when resuming a session
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove(_pauseStartTimeKey);
+    await prefs.remove(_totalPausedDurationKey);
 
     // Stop the timer - session is ready but not running
     _timer?.cancel();

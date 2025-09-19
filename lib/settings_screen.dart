@@ -1,8 +1,29 @@
 import 'package:flutter/material.dart';
 import 'services/database_service.dart';
+import 'services/settings_service.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
+
+  @override
+  State<SettingsScreen> createState() => _SettingsScreenState();
+}
+
+class _SettingsScreenState extends State<SettingsScreen> {
+  int _recentSessionsCount = 10;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadSettings();
+  }
+
+  Future<void> _loadSettings() async {
+    final count = await SettingsService.getRecentSessionsCount();
+    setState(() {
+      _recentSessionsCount = count;
+    });
+  }
 
   Future<void> _clearAllSessions(BuildContext context) async {
     final confirmed = await showDialog<bool>(
@@ -69,6 +90,64 @@ class SettingsScreen extends StatelessWidget {
       body: ListView(
         children: [
           const SizedBox(height: 16),
+          Card(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Text(
+                    'Affichage',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
+                  ),
+                ),
+                ListTile(
+                  leading: const Icon(Icons.history),
+                  title: const Text('Sessions récentes'),
+                  subtitle: Text('Afficher $_recentSessionsCount sessions sur l\'écran principal'),
+                  trailing: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      IconButton(
+                        onPressed: _recentSessionsCount > 1
+                            ? () async {
+                                setState(() {
+                                  _recentSessionsCount--;
+                                });
+                                await SettingsService.setRecentSessionsCount(_recentSessionsCount);
+                              }
+                            : null,
+                        icon: const Icon(Icons.remove),
+                      ),
+                      Text(
+                        '$_recentSessionsCount',
+                        style: const TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _recentSessionsCount < 20
+                            ? () async {
+                                setState(() {
+                                  _recentSessionsCount++;
+                                });
+                                await SettingsService.setRecentSessionsCount(_recentSessionsCount);
+                              }
+                            : null,
+                        icon: const Icon(Icons.add),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
           Card(
             margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(

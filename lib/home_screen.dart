@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dart:async';
 import 'services/timer_service.dart';
 import 'services/database_service.dart';
+import 'services/settings_service.dart';
 import 'models/timer_session.dart';
 import 'sessions_screen.dart';
 import 'settings_screen.dart';
@@ -58,10 +59,11 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadRecentSessions() async {
     try {
       final sessions = await DatabaseService.getAllSessions();
+      final recentCount = await SettingsService.getRecentSessionsCount();
       setState(() {
         _recentSessions = sessions
             .where((session) => !session.isRunning)
-            .take(3)
+            .take(recentCount)
             .toList();
       });
     } catch (e) {
@@ -133,7 +135,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   icon: Icons.stop,
                   label: 'Stop',
                   color: Colors.red,
-                  onPressed: _currentState != TimerState.stopped ? _stopTimer : null,
+                  onPressed: _currentState != TimerState.stopped && _currentState != TimerState.ready ? _stopTimer : null,
                 ),
               ],
             ),
@@ -240,27 +242,31 @@ class _HomeScreenState extends State<HomeScreen> {
           ListTile(
             leading: const Icon(Icons.history),
             title: const Text('Historique'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              Navigator.push(
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => SessionsScreen(timerService: _timerService),
                 ),
               );
+              // Refresh recent sessions when returning from history
+              _loadRecentSessions();
             },
           ),
           ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Réglages'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              Navigator.push(
+              await Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => const SettingsScreen(),
                 ),
               );
+              // Refresh recent sessions when returning from settings (in case count changed)
+              _loadRecentSessions();
             },
           ),
           ListTile(
@@ -301,56 +307,74 @@ class _HomeScreenState extends State<HomeScreen> {
           ),
         ),
         const SizedBox(height: 12),
-        SizedBox(
-          height: 120,
-          child: ListView.builder(
-            scrollDirection: Axis.horizontal,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: _recentSessions.length,
-            itemBuilder: (context, index) {
-              final session = _recentSessions[index];
-              return Container(
-                width: 140,
-                margin: const EdgeInsets.only(right: 12),
-                child: Card(
-                  child: InkWell(
-                    onTap: () => _timerService.resumeSession(session),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(12),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Icon(
+        Column(
+          children: _recentSessions.map((session) {
+            return Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+              child: Card(
+                child: InkWell(
+                  onTap: () => _timerService.resumeSession(session),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Icon(
                             Icons.timer,
                             color: Theme.of(context).colorScheme.primary,
                             size: 24,
                           ),
-                          const SizedBox(height: 8),
-                          Text(
-                            _formatDuration(session.currentDuration),
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
+                        ),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                _formatDuration(session.currentDuration),
+                                style: const TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                _formatDateTime(session.startTime),
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                              if (session.totalPausedDuration > 0) ...[
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ],
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            _formatDateTime(session.startTime),
-                            style: TextStyle(
-                              fontSize: 11,
-                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
-                        ],
-                      ),
+                        ),
+                        Icon(
+                          Icons.play_arrow,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                      ],
                     ),
                   ),
                 ),
-              );
-            },
-          ),
+              ),
+            );
+          }).toList(),
         ),
       ],
     );
@@ -361,36 +385,23 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   Widget _buildPauseInfo() {
-    if (_currentState == TimerState.stopped || _currentState == TimerState.ready) {
+    if (_currentState == TimerState.stopped) {
       return const SizedBox.shrink();
     }
 
-    final totalPause = _timerService.totalPausedDuration;
-    final currentPause = _timerService.currentPauseDuration;
+    final totalPauseRealTime = _timerService.totalPausedDurationRealTime;
 
-    return Column(
-      children: [
-        if (totalPause.inSeconds > 0)
-          Text(
-            'Temps de pause total: ${_formatDuration(totalPause)}',
-            style: TextStyle(
-              fontSize: 14,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-            ),
-          ),
-        if (_currentState == TimerState.paused && currentPause.inSeconds > 0)
-          Padding(
-            padding: const EdgeInsets.only(top: 4),
-            child: Text(
-              'Pause en cours: ${_formatDuration(currentPause)}',
-              style: TextStyle(
-                fontSize: 14,
-                color: Colors.orange,
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-          ),
-      ],
-    );
+    if (totalPauseRealTime.inSeconds > 0) {
+      return Text(
+        'Temps de pause total: ${_formatDuration(totalPauseRealTime)}',
+        style: TextStyle(
+          fontSize: 14,
+          color: _currentState == TimerState.paused ? Colors.orange : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+          fontWeight: _currentState == TimerState.paused ? FontWeight.w500 : FontWeight.normal,
+        ),
+      );
+    }
+
+    return const SizedBox.shrink();
   }
 }
