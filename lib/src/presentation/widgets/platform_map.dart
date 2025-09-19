@@ -64,7 +64,8 @@ class PlatformMap extends StatelessWidget {
       ),
       children: [
         TileLayer(
-          urlTemplate: 'https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png',
+          // https://api.maptiler.com/maps/openstreetmap/256/{z}/{x}/{y}.jpg?key=osBa3JNUBd6hTHqBq2OO
+          urlTemplate: 'https://api.maptiler.com/maps/openstreetmap/256/{z}/{x}/{y}.jpg?key=osBa3JNUBd6hTHqBq2OO',
           subdomains: const ['a', 'b', 'c'],
         ),
         MarkerLayer(
