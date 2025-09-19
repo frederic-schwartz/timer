@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:timer/home_screen.dart';
+
+import 'src/presentation/screens/home_screen.dart';
 
 void main() {
   runApp(const MyApp());

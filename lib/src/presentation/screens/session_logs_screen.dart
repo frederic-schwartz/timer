@@ -1,38 +1,42 @@
 import 'package:flutter/material.dart';
-import 'services/database_service.dart';
-import 'models/session_log.dart';
-import 'models/timer_session.dart';
+
+import '../../domain/entities/session_log.dart';
+import '../../domain/entities/timer_session.dart';
+import '../controllers/session_logs_controller.dart';
 
 class SessionLogsScreen extends StatefulWidget {
   final TimerSession session;
 
-  const SessionLogsScreen({
-    super.key,
-    required this.session,
-  });
+  const SessionLogsScreen({super.key, required this.session});
 
   @override
   State<SessionLogsScreen> createState() => _SessionLogsScreenState();
 }
 
 class _SessionLogsScreenState extends State<SessionLogsScreen> {
-  List<SessionLog> _logs = [];
-  bool _isLoading = true;
+  late final SessionLogsController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadLogs();
+    _controller = SessionLogsController();
+    _controller.addListener(_onControllerChanged);
+    if (widget.session.id != null) {
+      _controller.loadLogs(widget.session.id!);
+    }
   }
 
-  Future<void> _loadLogs() async {
-    if (widget.session.id != null) {
-      final logs = await DatabaseService.getSessionLogs(widget.session.id!);
-      setState(() {
-        _logs = logs;
-        _isLoading = false;
-      });
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {});
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
   }
 
   String _formatDuration(Duration duration) {
@@ -78,6 +82,8 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final logs = _controller.logs;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Détail des logs'),
@@ -86,7 +92,6 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Session info header
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -158,11 +163,10 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
               ],
             ),
           ),
-          // Logs section
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text(
-              'Historique des actions (${_logs.length})',
+              'Historique des actions (${logs.length})',
               style: TextStyle(
                 fontSize: 18,
                 fontWeight: FontWeight.w600,
@@ -171,11 +175,10 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          // Logs list
           Expanded(
-            child: _isLoading
+            child: _controller.isLoading
                 ? const Center(child: CircularProgressIndicator())
-                : _logs.isEmpty
+                : logs.isEmpty
                     ? Center(
                         child: Text(
                           'Aucun log disponible pour cette session',
@@ -187,11 +190,10 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
                       )
                     : ListView.builder(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
-                        itemCount: _logs.length,
+                        itemCount: logs.length,
                         itemBuilder: (context, index) {
-                          final log = _logs[index];
-                          final isFirst = index == 0;
-                          final isLast = index == _logs.length - 1;
+                          final log = logs[index];
+                          final isLast = index == logs.length - 1;
 
                           return Container(
                             margin: const EdgeInsets.only(bottom: 8),
@@ -202,87 +204,60 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
                                 child: Row(
                                   crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    Container(
-                                      padding: const EdgeInsets.all(8),
-                                      decoration: BoxDecoration(
-                                        color: _getActionColor(log.action).withValues(alpha: 0.1),
-                                        borderRadius: BorderRadius.circular(8),
-                                      ),
-                                      child: Icon(
-                                        _getActionIcon(log.action),
-                                        color: _getActionColor(log.action),
-                                        size: 20,
-                                      ),
+                                    Column(
+                                      children: [
+                                        Container(
+                                          width: 40,
+                                          height: 40,
+                                          decoration: BoxDecoration(
+                                            color: _getActionColor(log.action).withValues(alpha: 0.1),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            _getActionIcon(log.action),
+                                            color: _getActionColor(log.action),
+                                          ),
+                                        ),
+                                        if (!isLast)
+                                          Container(
+                                            width: 2,
+                                            height: 40,
+                                            margin: const EdgeInsets.only(top: 4),
+                                            color: Theme.of(context).colorScheme.outline.withValues(alpha: 0.2),
+                                          ),
+                                      ],
                                     ),
-                                    const SizedBox(width: 12),
+                                    const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              Text(
-                                                log.action.displayName,
-                                                style: TextStyle(
-                                                  fontSize: 16,
-                                                  fontWeight: FontWeight.w600,
-                                                  color: _getActionColor(log.action),
-                                                ),
-                                              ),
-                                              if (isFirst)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.green.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: const Text(
-                                                    'Premier',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.green,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (isLast && !isFirst)
-                                                Container(
-                                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                                  decoration: BoxDecoration(
-                                                    color: Colors.blue.withValues(alpha: 0.1),
-                                                    borderRadius: BorderRadius.circular(12),
-                                                  ),
-                                                  child: const Text(
-                                                    'Dernier',
-                                                    style: TextStyle(
-                                                      fontSize: 12,
-                                                      color: Colors.blue,
-                                                      fontWeight: FontWeight.w500,
-                                                    ),
-                                                  ),
-                                                ),
-                                            ],
+                                          Text(
+                                            _formatDateTime(log.timestamp),
+                                            style: const TextStyle(
+                                              fontSize: 14,
+                                              fontWeight: FontWeight.w500,
+                                            ),
                                           ),
                                           const SizedBox(height: 4),
                                           Text(
-                                            _formatDateTime(log.timestamp),
+                                            log.action.displayName,
                                             style: TextStyle(
-                                              fontSize: 14,
-                                              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                              fontSize: 16,
+                                              fontWeight: FontWeight.w600,
+                                              color: _getActionColor(log.action),
                                             ),
                                           ),
-                                          if (log.details != null) ...[
-                                            const SizedBox(height: 4),
-                                            Text(
-                                              log.details!,
-                                              style: TextStyle(
-                                                fontSize: 13,
-                                                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.5),
-                                                fontStyle: FontStyle.italic,
+                                          if (log.details != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 4),
+                                              child: Text(
+                                                log.details!,
+                                                style: TextStyle(
+                                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                                                ),
                                               ),
                                             ),
-                                          ],
                                         ],
                                       ),
                                     ),

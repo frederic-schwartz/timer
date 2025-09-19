@@ -1,24 +1,28 @@
-import 'package:sqflite/sqflite.dart';
 import 'package:path/path.dart';
-import '../models/timer_session.dart';
-import '../models/session_log.dart';
+import 'package:sqflite/sqflite.dart';
 
-class DatabaseService {
-  static Database? _database;
+import '../models/session_log_model.dart';
+import '../models/timer_session_model.dart';
+
+class SessionLocalDataSource {
+  SessionLocalDataSource();
+
   static const String _tableName = 'timer_sessions';
   static const String _logsTableName = 'session_logs';
 
-  static Future<Database> get database async {
+  Database? _database;
+
+  Future<Database> get _db async {
     if (_database != null) return _database!;
     _database = await _initDatabase();
     return _database!;
   }
 
-  static Future<Database> _initDatabase() async {
+  Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'timer.db');
 
-    return await openDatabase(
+    return openDatabase(
       path,
       version: 2,
       onCreate: _createDatabase,
@@ -26,8 +30,7 @@ class DatabaseService {
     );
   }
 
-  static Future<void> _createDatabase(Database db, int version) async {
-    // Create sessions table
+  Future<void> _createDatabase(Database db, int version) async {
     await db.execute('''
       CREATE TABLE $_tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -39,7 +42,6 @@ class DatabaseService {
       )
     ''');
 
-    // Create logs table
     await db.execute('''
       CREATE TABLE $_logsTableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -52,9 +54,8 @@ class DatabaseService {
     ''');
   }
 
-  static Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
+  Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
     if (oldVersion < 2) {
-      // Add logs table for existing databases
       await db.execute('''
         CREATE TABLE $_logsTableName (
           id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -68,13 +69,13 @@ class DatabaseService {
     }
   }
 
-  static Future<int> insertSession(TimerSession session) async {
-    final db = await database;
-    return await db.insert(_tableName, session.toMap());
+  Future<int> insertSession(TimerSessionModel session) async {
+    final db = await _db;
+    return db.insert(_tableName, session.toMap());
   }
 
-  static Future<TimerSession?> getCurrentSession() async {
-    final db = await database;
+  Future<TimerSessionModel?> getCurrentSession() async {
+    final db = await _db;
     final result = await db.query(
       _tableName,
       where: 'isRunning = ?',
@@ -84,13 +85,17 @@ class DatabaseService {
     );
 
     if (result.isNotEmpty) {
-      return TimerSession.fromMap(result.first);
+      return TimerSessionModel.fromMap(result.first);
     }
     return null;
   }
 
-  static Future<void> updateSession(TimerSession session) async {
-    final db = await database;
+  Future<void> updateSession(TimerSessionModel session) async {
+    if (session.id == null) {
+      throw ArgumentError('Cannot update a session without an id');
+    }
+
+    final db = await _db;
     await db.update(
       _tableName,
       session.toMap(),
@@ -99,18 +104,18 @@ class DatabaseService {
     );
   }
 
-  static Future<List<TimerSession>> getAllSessions() async {
-    final db = await database;
+  Future<List<TimerSessionModel>> getAllSessions() async {
+    final db = await _db;
     final result = await db.query(
       _tableName,
       orderBy: 'startTime DESC',
     );
 
-    return result.map((map) => TimerSession.fromMap(map)).toList();
+    return result.map(TimerSessionModel.fromMap).toList();
   }
 
-  static Future<void> deleteSession(int id) async {
-    final db = await database;
+  Future<void> deleteSession(int id) async {
+    final db = await _db;
     await db.delete(
       _tableName,
       where: 'id = ?',
@@ -118,14 +123,13 @@ class DatabaseService {
     );
   }
 
-  // Session logs methods
-  static Future<int> insertSessionLog(SessionLog log) async {
-    final db = await database;
-    return await db.insert(_logsTableName, log.toMap());
+  Future<int> insertSessionLog(SessionLogModel log) async {
+    final db = await _db;
+    return db.insert(_logsTableName, log.toMap());
   }
 
-  static Future<List<SessionLog>> getSessionLogs(int sessionId) async {
-    final db = await database;
+  Future<List<SessionLogModel>> getSessionLogs(int sessionId) async {
+    final db = await _db;
     final result = await db.query(
       _logsTableName,
       where: 'sessionId = ?',
@@ -133,21 +137,21 @@ class DatabaseService {
       orderBy: 'timestamp ASC',
     );
 
-    return result.map((map) => SessionLog.fromMap(map)).toList();
+    return result.map(SessionLogModel.fromMap).toList();
   }
 
-  static Future<List<SessionLog>> getAllLogs() async {
-    final db = await database;
+  Future<List<SessionLogModel>> getAllLogs() async {
+    final db = await _db;
     final result = await db.query(
       _logsTableName,
       orderBy: 'timestamp DESC',
     );
 
-    return result.map((map) => SessionLog.fromMap(map)).toList();
+    return result.map(SessionLogModel.fromMap).toList();
   }
 
-  static Future<void> deleteSessionLogs(int sessionId) async {
-    final db = await database;
+  Future<void> deleteSessionLogs(int sessionId) async {
+    final db = await _db;
     await db.delete(
       _logsTableName,
       where: 'sessionId = ?',
@@ -155,8 +159,8 @@ class DatabaseService {
     );
   }
 
-  static Future<void> deleteAllLogs() async {
-    final db = await database;
+  Future<void> deleteAllLogs() async {
+    final db = await _db;
     await db.delete(_logsTableName);
   }
 }

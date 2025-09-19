@@ -1,37 +1,17 @@
 class SessionLog {
   final int? id;
-  final int? sessionId; // Reference to the timer session
+  final int? sessionId;
   final DateTime timestamp;
   final SessionAction action;
-  final String? details; // Optional additional information
+  final String? details;
 
-  SessionLog({
+  const SessionLog({
     this.id,
     this.sessionId,
     required this.timestamp,
     required this.action,
     this.details,
   });
-
-  Map<String, dynamic> toMap() {
-    return {
-      'id': id,
-      'sessionId': sessionId,
-      'timestamp': timestamp.millisecondsSinceEpoch,
-      'action': action.name,
-      'details': details,
-    };
-  }
-
-  static SessionLog fromMap(Map<String, dynamic> map) {
-    return SessionLog(
-      id: map['id'],
-      sessionId: map['sessionId'],
-      timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp']),
-      action: SessionAction.values.firstWhere((e) => e.name == map['action']),
-      details: map['details'],
-    );
-  }
 
   SessionLog copyWith({
     int? id,

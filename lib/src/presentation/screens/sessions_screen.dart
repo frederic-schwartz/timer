@@ -1,40 +1,38 @@
 import 'package:flutter/material.dart';
-import 'models/timer_session.dart';
-import 'services/database_service.dart';
-import 'services/timer_service.dart';
+
+import '../../domain/entities/timer_session.dart';
+import '../controllers/sessions_controller.dart';
 import 'session_logs_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
-  final TimerService timerService;
-
-  const SessionsScreen({super.key, required this.timerService});
+  const SessionsScreen({super.key});
 
   @override
   State<SessionsScreen> createState() => _SessionsScreenState();
 }
 
 class _SessionsScreenState extends State<SessionsScreen> {
-  List<TimerSession> _sessions = [];
-  bool _isLoading = true;
+  late final SessionsController _controller;
 
   @override
   void initState() {
     super.initState();
-    _loadSessions();
+    _controller = SessionsController();
+    _controller.addListener(_onControllerChanged);
+    _controller.loadSessions();
   }
 
-  Future<void> _loadSessions() async {
-    try {
-      final sessions = await DatabaseService.getAllSessions();
-      setState(() {
-        _sessions = sessions.where((session) => !session.isRunning).toList();
-        _isLoading = false;
-      });
-    } catch (e) {
-      setState(() {
-        _isLoading = false;
-      });
+  void _onControllerChanged() {
+    if (mounted) {
+      setState(() {});
     }
+  }
+
+  @override
+  void dispose() {
+    _controller.removeListener(_onControllerChanged);
+    _controller.dispose();
+    super.dispose();
   }
 
   String _formatDuration(Duration duration) {
@@ -49,7 +47,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
   }
 
   Future<void> _resumeSession(TimerSession session) async {
-    await widget.timerService.resumeSession(session);
+    await _controller.resumeSession(session);
     if (mounted) {
       Navigator.pop(context);
     }
@@ -74,22 +72,23 @@ class _SessionsScreenState extends State<SessionsScreen> {
       ),
     );
 
-    if (confirmed == true && session.id != null) {
-      await DatabaseService.deleteSession(session.id!);
-      _loadSessions();
+    if (confirmed == true) {
+      await _controller.deleteSession(session);
     }
   }
 
   @override
   Widget build(BuildContext context) {
+    final sessions = _controller.sessions;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Historique des sessions'),
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
-      body: _isLoading
+      body: _controller.isLoading
           ? const Center(child: CircularProgressIndicator())
-          : _sessions.isEmpty
+          : sessions.isEmpty
               ? const Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -111,11 +110,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
                   ),
                 )
               : RefreshIndicator(
-                  onRefresh: _loadSessions,
+                  onRefresh: _controller.loadSessions,
                   child: ListView.builder(
-                    itemCount: _sessions.length,
+                    itemCount: sessions.length,
                     itemBuilder: (context, index) {
-                      final session = _sessions[index];
+                      final session = sessions[index];
                       final duration = session.currentDuration;
 
                       return Card(
