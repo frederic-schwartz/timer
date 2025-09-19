@@ -94,66 +94,73 @@ class _HomeScreenState extends State<HomeScreen> {
         backgroundColor: Theme.of(context).colorScheme.inversePrimary,
       ),
       drawer: _buildDrawer(),
-      body: Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(32),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(16),
-                color: Theme.of(context).colorScheme.surface,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Text(
-                _formatDuration(_currentDuration),
-                style: TextStyle(
-                  fontSize: 48,
-                  fontWeight: FontWeight.bold,
-                  color: _getTimerColor(),
-                  fontFeatures: const [FontFeature.tabularFigures()],
-                ),
-              ),
-            ),
-            const SizedBox(height: 48),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      body: Column(
+        children: [
+          // Fixed timer section
+          Padding(
+            padding: const EdgeInsets.all(32),
+            child: Column(
               children: [
-                _buildControlButton(
-                  icon: _currentState == TimerState.running ? Icons.pause : Icons.play_arrow,
-                  label: _currentState == TimerState.running ? 'Pause' : 'Start',
-                  color: _currentState == TimerState.running ? Colors.orange : Colors.green,
-                  onPressed: _currentState == TimerState.running ? _pauseTimer : _startTimer,
+                Container(
+                  padding: const EdgeInsets.all(32),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: Theme.of(context).colorScheme.surface,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withValues(alpha: 0.1),
+                        blurRadius: 8,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Text(
+                    _formatDuration(_currentDuration),
+                    style: TextStyle(
+                      fontSize: 48,
+                      fontWeight: FontWeight.bold,
+                      color: _getTimerColor(),
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
+                  ),
                 ),
-                _buildControlButton(
-                  icon: Icons.stop,
-                  label: 'Stop',
-                  color: Colors.red,
-                  onPressed: _currentState != TimerState.stopped && _currentState != TimerState.ready ? _stopTimer : null,
+                const SizedBox(height: 48),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _buildControlButton(
+                      icon: _currentState == TimerState.running ? Icons.pause : Icons.play_arrow,
+                      label: _currentState == TimerState.running ? 'Pause' : 'Start',
+                      color: _currentState == TimerState.running ? Colors.orange : Colors.green,
+                      onPressed: _currentState == TimerState.running ? _pauseTimer : _startTimer,
+                    ),
+                    _buildControlButton(
+                      icon: Icons.stop,
+                      label: 'Stop',
+                      color: Colors.red,
+                      onPressed: _currentState != TimerState.stopped && _currentState != TimerState.ready ? _stopTimer : null,
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 24),
+                Text(
+                  _getStateText(),
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: _getTimerColor(),
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                _buildPauseInfo(),
               ],
             ),
-            const SizedBox(height: 24),
-            Text(
-              _getStateText(),
-              style: TextStyle(
-                fontSize: 18,
-                color: _getTimerColor(),
-                fontWeight: FontWeight.w500,
-              ),
-            ),
-            const SizedBox(height: 16),
-            _buildPauseInfo(),
-            const SizedBox(height: 32),
-            _buildRecentSessions(),
-          ],
-        ),
+          ),
+          // Scrollable sessions section
+          Expanded(
+            child: _buildRecentSessions(),
+          ),
+        ],
       ),
     );
   }
@@ -296,7 +303,7 @@ class _HomeScreenState extends State<HomeScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           child: Text(
             'Sessions récentes',
             style: TextStyle(
@@ -306,75 +313,79 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
         ),
-        const SizedBox(height: 12),
-        Column(
-          children: _recentSessions.map((session) {
-            return Container(
-              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-              child: Card(
-                child: InkWell(
-                  onTap: () => _timerService.resumeSession(session),
-                  borderRadius: BorderRadius.circular(12),
-                  child: Padding(
-                    padding: const EdgeInsets.all(16),
-                    child: Row(
-                      children: [
-                        Container(
-                          padding: const EdgeInsets.all(12),
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(8),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            itemCount: _recentSessions.length,
+            itemBuilder: (context, index) {
+              final session = _recentSessions[index];
+              return Container(
+                margin: const EdgeInsets.only(bottom: 8),
+                child: Card(
+                  child: InkWell(
+                    onTap: () => _timerService.resumeSession(session),
+                    borderRadius: BorderRadius.circular(12),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                              Icons.timer,
+                              color: Theme.of(context).colorScheme.primary,
+                              size: 24,
+                            ),
                           ),
-                          child: Icon(
-                            Icons.timer,
-                            color: Theme.of(context).colorScheme.primary,
-                            size: 24,
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _formatDuration(session.currentDuration),
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDateTime(session.startTime),
-                                style: TextStyle(
-                                  fontSize: 14,
-                                  color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                ),
-                              ),
-                              if (session.totalPausedDuration > 0) ...[
-                                const SizedBox(height: 4),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  'Pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.orange,
+                                  _formatDuration(session.currentDuration),
+                                  style: const TextStyle(
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
                                   ),
                                 ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  _formatDateTime(session.startTime),
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                                  ),
+                                ),
+                                if (session.totalPausedDuration > 0) ...[
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      color: Colors.orange,
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
-                        ),
-                        Icon(
-                          Icons.play_arrow,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                      ],
+                          Icon(
+                            Icons.play_arrow,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ],
+                      ),
                     ),
                   ),
                 ),
-              ),
-            );
-          }).toList(),
+              );
+            },
+          ),
         ),
       ],
     );
