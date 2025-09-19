@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/session_log.dart';
 import '../controllers/all_logs_controller.dart';
+import '../widgets/glass_card.dart';
 import 'session_logs_screen.dart';
 
 class AllLogsScreen extends StatefulWidget {
@@ -138,10 +139,26 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
   }
 
   Widget _buildFilterChip({required String label, required String value}) {
+    final theme = Theme.of(context);
+    final isSelected = _controller.filter == value;
     return FilterChip(
       label: Text(label),
-      selected: _controller.filter == value,
+      selected: isSelected,
       onSelected: (_) => _controller.setFilter(value),
+      backgroundColor: theme.colorScheme.surface.withValues(alpha: 0.4),
+      selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+      labelStyle: theme.textTheme.bodyMedium?.copyWith(
+        fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+        color: isSelected
+            ? theme.colorScheme.primary
+            : theme.colorScheme.onSurface.withValues(alpha: 0.7),
+      ),
+      side: BorderSide(
+        color: isSelected
+            ? theme.colorScheme.primary.withValues(alpha: 0.5)
+            : theme.colorScheme.outline.withValues(alpha: 0.2),
+      ),
+      showCheckmark: false,
     );
   }
 
@@ -149,10 +166,25 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
   Widget build(BuildContext context) {
     final logs = _controller.filteredLogs;
 
+    final theme = Theme.of(context);
+    final gradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primary.withValues(alpha: 0.9),
+        theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        theme.colorScheme.surface,
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Tous les logs'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.onPrimary,
         actions: [
           IconButton(
             onPressed: () => _clearAllLogs(context),
@@ -161,88 +193,129 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
           ),
         ],
       ),
-      body: Column(
-        children: [
-          Container(
-            width: double.infinity,
-            padding: const EdgeInsets.all(16),
-            child: Wrap(
-              spacing: 8,
+      body: Container(
+        decoration: BoxDecoration(gradient: gradient),
+        child: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildFilterChip(label: 'Tous', value: 'all'),
-                _buildFilterChip(label: 'Démarrages', value: 'start'),
-                _buildFilterChip(label: 'Pauses', value: 'pause'),
-                _buildFilterChip(label: 'Reprises', value: 'resume'),
-                _buildFilterChip(label: 'Arrêts', value: 'stop'),
-                _buildFilterChip(label: 'Reprise session', value: 'resume_session'),
+                GlassCard(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Wrap(
+                    spacing: 10,
+                    runSpacing: 10,
+                    children: [
+                      _buildFilterChip(label: 'Tous', value: 'all'),
+                      _buildFilterChip(label: 'Démarrages', value: 'start'),
+                      _buildFilterChip(label: 'Pauses', value: 'pause'),
+                      _buildFilterChip(label: 'Reprises', value: 'resume'),
+                      _buildFilterChip(label: 'Arrêts', value: 'stop'),
+                      _buildFilterChip(label: 'Reprise session', value: 'resume_session'),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Expanded(
+                  child: _controller.isLoading
+                      ? const Center(child: CircularProgressIndicator())
+                      : logs.isEmpty
+                          ? Center(
+                              child: Text(
+                                'Aucun log disponible',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                ),
+                              ),
+                            )
+                          : RefreshIndicator(
+                              onRefresh: _controller.loadData,
+                              child: ListView.separated(
+                                physics: const BouncingScrollPhysics(),
+                                itemCount: logs.length,
+                                separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                itemBuilder: (context, index) {
+                                  final log = logs[index];
+                                  final session = _controller.sessionForLog(log);
+
+                                  return GlassCard(
+                                    padding: const EdgeInsets.all(18),
+                                    onTap: () => _showSessionDetails(log),
+                                    child: Row(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Container(
+                                          padding: const EdgeInsets.all(12),
+                                          decoration: BoxDecoration(
+                                            color: _getActionColor(log.action).withValues(alpha: 0.15),
+                                            shape: BoxShape.circle,
+                                          ),
+                                          child: Icon(
+                                            _getActionIcon(log.action),
+                                            color: _getActionColor(log.action),
+                                          ),
+                                        ),
+                                        const SizedBox(width: 16),
+                                        Expanded(
+                                          child: Column(
+                                            crossAxisAlignment: CrossAxisAlignment.start,
+                                            children: [
+                                              Text(
+                                                log.action.displayName,
+                                                style: theme.textTheme.titleMedium?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: _getActionColor(log.action),
+                                                ),
+                                              ),
+                                              const SizedBox(height: 4),
+                                              Text(
+                                                _formatDateTime(log.timestamp),
+                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                                ),
+                                              ),
+                                              if (log.details != null)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 6),
+                                                  child: Text(
+                                                    log.details!,
+                                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                                    ),
+                                                  ),
+                                                ),
+                                              if (session != null) ...[
+                                                const SizedBox(height: 8),
+                                                Text(
+                                                  'Session du ${_formatDateTime(session.startTime)}',
+                                                  style: theme.textTheme.bodySmall?.copyWith(
+                                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                                  ),
+                                                ),
+                                                if (session.endTime != null)
+                                                  Text(
+                                                    'Durée: ${_formatDuration(session.currentDuration)}',
+                                                    style: theme.textTheme.bodySmall?.copyWith(
+                                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                                    ),
+                                                  ),
+                                              ],
+                                            ],
+                                          ),
+                                        ),
+                                        const Icon(Icons.chevron_right_rounded),
+                                      ],
+                                    ),
+                                  );
+                                },
+                              ),
+                            ),
+                ),
               ],
             ),
           ),
-          Expanded(
-            child: _controller.isLoading
-                ? const Center(child: CircularProgressIndicator())
-                : logs.isEmpty
-                    ? Center(
-                        child: Text(
-                          'Aucun log disponible',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                          ),
-                        ),
-                      )
-                    : RefreshIndicator(
-                        onRefresh: _controller.loadData,
-                        child: ListView.builder(
-                          itemCount: logs.length,
-                          itemBuilder: (context, index) {
-                            final log = logs[index];
-                            final session = _controller.sessionForLog(log);
-
-                            return Card(
-                              margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                              child: ListTile(
-                                leading: CircleAvatar(
-                                  backgroundColor: _getActionColor(log.action).withValues(alpha: 0.1),
-                                  child: Icon(
-                                    _getActionIcon(log.action),
-                                    color: _getActionColor(log.action),
-                                  ),
-                                ),
-                                title: Text(
-                                  '${log.action.displayName} • ${_formatDateTime(log.timestamp)}',
-                                  style: const TextStyle(fontWeight: FontWeight.w600),
-                                ),
-                                subtitle: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    if (log.details != null) Text(log.details!),
-                                    if (session != null) ...[
-                                      const SizedBox(height: 4),
-                                      Text(
-                                        'Session du ${_formatDateTime(session.startTime)}',
-                                        style: TextStyle(
-                                          color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                        ),
-                                      ),
-                                      if (session.endTime != null)
-                                        Text(
-                                          'Durée: ${_formatDuration(session.currentDuration)}',
-                                          style: TextStyle(
-                                            color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                                          ),
-                                        ),
-                                    ],
-                                  ],
-                                ),
-                                onTap: () => _showSessionDetails(log),
-                              ),
-                            );
-                          },
-                        ),
-                      ),
-          ),
-        ],
+        ),
       ),
     );
   }

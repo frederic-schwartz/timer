@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 
+import '../widgets/glass_card.dart';
+
 class AboutScreen extends StatefulWidget {
   const AboutScreen({super.key});
 
@@ -26,72 +28,88 @@ class _AboutScreenState extends State<AboutScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final gradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primary.withValues(alpha: 0.9),
+        theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        theme.colorScheme.surface,
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('À propos'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          children: [
-            const SizedBox(height: 32),
-            Container(
-              width: 120,
-              height: 120,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.1),
-                    blurRadius: 8,
-                    offset: const Offset(0, 4),
+      body: Container(
+        decoration: BoxDecoration(gradient: gradient),
+        child: SafeArea(
+          child: ListView(
+            padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  Container(
+                    width: 120,
+                    height: 120,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.12),
+                          blurRadius: 24,
+                          offset: const Offset(0, 12),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        width: 120,
+                        height: 120,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Tockee',
+                    style: theme.textTheme.displaySmall?.copyWith(
+                      fontWeight: FontWeight.w800,
+                      color: theme.colorScheme.onPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    _version.isEmpty ? 'Chargement...' : 'Version $_version',
+                    style: theme.textTheme.bodyMedium?.copyWith(
+                      color: theme.colorScheme.onPrimary.withValues(alpha: 0.8),
+                    ),
                   ),
                 ],
               ),
-              child: ClipOval(
-                child: Image.asset(
-                  'assets/icon/app_icon.png',
-                  width: 120,
-                  height: 120,
-                  fit: BoxFit.cover,
-                ),
-              ),
-            ),
-            const SizedBox(height: 24),
-            Text(
-              'Tockee',
-              style: TextStyle(
-                fontSize: 28,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              _version.isEmpty ? 'Chargement...' : 'Version $_version',
-              style: TextStyle(
-                fontSize: 16,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-              ),
-            ),
-            const SizedBox(height: 32),
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(16),
+              const SizedBox(height: 32),
+              GlassCard(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
                       'Fonctionnalités',
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                        color: Theme.of(context).colorScheme.primary,
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
                       ),
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 16),
                     const _FeatureItem(
                       icon: Icons.play_arrow,
                       title: 'Chronomètre',
@@ -115,17 +133,38 @@ class _AboutScreenState extends State<AboutScreen> {
                   ],
                 ),
               ),
-            ),
-            const Spacer(),
-            Text(
-              'Copyright © 2025 ONLINE404.com',
-              style: TextStyle(
-                fontSize: 14,
-                color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+              const SizedBox(height: 32),
+              GlassCard(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Crédits',
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.primary,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Text(
+                      'Développé avec ❤️ en Flutter',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Copyright © 2025 ONLINE404.com',
+                      style: theme.textTheme.bodySmall?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-          ],
+            ],
+          ),
         ),
       ),
     );

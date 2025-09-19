@@ -184,6 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
         : '—';
 
     return Container(
+      width: double.infinity,
       padding: const EdgeInsets.all(28),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(28),
@@ -211,14 +212,17 @@ class _HomeScreenState extends State<HomeScreen> {
         children: [
           _StateBadge(label: _stateLabel(state), color: accent),
           const SizedBox(height: 24),
-          Text(
-            _formatDuration(_controller.currentDuration),
-            style: TextStyle(
-              fontSize: 56,
-              fontWeight: FontWeight.w700,
-              letterSpacing: 1.2,
-              fontFeatures: const [FontFeature.tabularFigures()],
-              color: accent,
+          Align(
+            alignment: Alignment.center,
+            child: Text(
+              _formatDuration(_controller.currentDuration),
+              style: TextStyle(
+                fontSize: 56,
+                fontWeight: FontWeight.w700,
+                letterSpacing: 1.2,
+                fontFeatures: const [FontFeature.tabularFigures()],
+                color: accent,
+              ),
             ),
           ),
           const SizedBox(height: 12),
@@ -252,14 +256,21 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Widget _buildControls(BuildContext context, TimerState state) {
     final theme = Theme.of(context);
+    final isRunning = state == TimerState.running;
+    final isPaused = state == TimerState.paused;
+    final primaryLabel = isRunning
+        ? 'Pause'
+        : isPaused
+            ? 'Reprendre'
+            : 'Démarrer';
 
     return Row(
       children: [
         Expanded(
           child: FilledButton.icon(
-            onPressed: state == TimerState.running ? _pauseTimer : _startTimer,
-            icon: Icon(state == TimerState.running ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 26),
-            label: Text(state == TimerState.running ? 'Pause' : 'Démarrer'),
+            onPressed: isRunning ? _pauseTimer : _startTimer,
+            icon: Icon(isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 26),
+            label: Text(primaryLabel),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),

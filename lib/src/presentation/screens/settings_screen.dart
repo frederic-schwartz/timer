@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../controllers/settings_controller.dart';
+import '../widgets/glass_card.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -86,123 +87,164 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Widget build(BuildContext context) {
     final count = _controller.recentSessionsCount;
 
+    final theme = Theme.of(context);
+    final gradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primary.withValues(alpha: 0.9),
+        theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        theme.colorScheme.surface,
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Réglages'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
-      body: _controller.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : ListView(
-              children: [
-                const SizedBox(height: 16),
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Affichage',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                        ),
+      body: Container(
+        decoration: BoxDecoration(gradient: gradient),
+        child: SafeArea(
+          child: _controller.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : ListView(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+                  children: [
+                    Text(
+                      'Personnalisez votre expérience',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.w700,
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
                       ),
-                      ListTile(
-                        leading: const Icon(Icons.history),
-                        title: const Text('Sessions récentes'),
-                        subtitle: Text('Afficher $count sessions sur l\'écran principal'),
-                        trailing: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              onPressed: count > SettingsController.minRecentSessions
-                                  ? () => _controller.decreaseRecentSessions()
-                                  : null,
-                              icon: const Icon(Icons.remove),
+                    ),
+                    const SizedBox(height: 20),
+                    GlassCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Affichage',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
                             ),
-                            Text(
-                              '$count',
-                              style: const TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                          ),
+                          const SizedBox(height: 12),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(
+                                Icons.history,
+                                color: theme.colorScheme.primary,
                               ),
                             ),
-                            IconButton(
-                              onPressed: count < SettingsController.maxRecentSessions
-                                  ? () => _controller.increaseRecentSessions()
-                                  : null,
-                              icon: const Icon(Icons.add),
+                            title: const Text('Sessions récentes'),
+                            subtitle: Text('Afficher $count sessions sur l\'écran principal'),
+                            trailing: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                IconButton(
+                                  onPressed: count > SettingsController.minRecentSessions
+                                      ? () => _controller.decreaseRecentSessions()
+                                      : null,
+                                  icon: const Icon(Icons.remove),
+                                ),
+                                Text(
+                                  '$count',
+                                  style: theme.textTheme.titleMedium?.copyWith(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                IconButton(
+                                  onPressed: count < SettingsController.maxRecentSessions
+                                      ? () => _controller.increaseRecentSessions()
+                                      : null,
+                                  icon: const Icon(Icons.add),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Données',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.primary,
                           ),
-                        ),
+                        ],
                       ),
-                      ListTile(
-                        leading: const Icon(
-                          Icons.delete_forever,
-                          color: Colors.red,
-                        ),
-                        title: const Text('Supprimer tout l\'historique'),
-                        subtitle: const Text('Efface toutes les sessions terminées'),
-                        onTap: () => _clearAllSessions(context),
-                      ),
-                    ],
-                  ),
-                ),
-                Card(
-                  margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Padding(
-                        padding: const EdgeInsets.all(16),
-                        child: Text(
-                          'Informations',
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.w600,
-                            color: Theme.of(context).colorScheme.primary,
+                    ),
+                    const SizedBox(height: 16),
+                    GlassCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Données',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 12),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.error.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(
+                                Icons.delete_forever,
+                                color: theme.colorScheme.error,
+                              ),
+                            ),
+                            title: const Text('Supprimer tout l\'historique'),
+                            subtitle: const Text('Efface toutes les sessions terminées'),
+                            onTap: () => _clearAllSessions(context),
+                          ),
+                        ],
                       ),
-                      const ListTile(
-                        leading: Icon(Icons.info_outline),
-                        title: Text('Version'),
-                        subtitle: Text('1.0.0'),
+                    ),
+                    const SizedBox(height: 16),
+                    GlassCard(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Informations',
+                            style: theme.textTheme.titleMedium?.copyWith(
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.primary,
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          const ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.info_outline),
+                            title: Text('Version'),
+                            subtitle: Text('1.0.0'),
+                          ),
+                          const ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Icon(Icons.developer_mode),
+                            title: Text('Technologie'),
+                            subtitle: Text('Flutter / Dart'),
+                          ),
+                        ],
                       ),
-                      const ListTile(
-                        leading: Icon(Icons.developer_mode),
-                        title: Text('Technologie'),
-                        subtitle: Text('Flutter / Dart'),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+        ),
+      ),
     );
   }
 }

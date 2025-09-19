@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../../domain/entities/timer_session.dart';
 import '../controllers/sessions_controller.dart';
+import '../widgets/glass_card.dart';
 import 'session_logs_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
@@ -81,127 +82,210 @@ class _SessionsScreenState extends State<SessionsScreen> {
   Widget build(BuildContext context) {
     final sessions = _controller.sessions;
 
+    final theme = Theme.of(context);
+    final gradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primary.withValues(alpha: 0.9),
+        theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        theme.colorScheme.surface,
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Historique des sessions'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.onPrimary,
       ),
-      body: _controller.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : sessions.isEmpty
-              ? const Center(
+      body: Container(
+        decoration: BoxDecoration(gradient: gradient),
+        child: SafeArea(
+          child: _controller.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(
-                        Icons.timer_off,
-                        size: 64,
-                        color: Colors.grey,
-                      ),
-                      SizedBox(height: 16),
                       Text(
-                        'Aucune session terminée',
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: Colors.grey,
+                        'Vos sessions terminées',
+                        style: theme.textTheme.titleLarge?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      Expanded(
+                        child: RefreshIndicator(
+                          onRefresh: _controller.loadSessions,
+                          child: sessions.isEmpty
+                              ? ListView(
+                                  physics: const AlwaysScrollableScrollPhysics(),
+                                  children: [
+                                    SizedBox(
+                                      height: MediaQuery.of(context).size.height * 0.4,
+                                      child: Column(
+                                        mainAxisAlignment: MainAxisAlignment.center,
+                                        children: [
+                                          Icon(
+                                            Icons.timer_off_rounded,
+                                            size: 72,
+                                            color: theme.colorScheme.onSurface.withValues(alpha: 0.35),
+                                          ),
+                                          const SizedBox(height: 16),
+                                          Text(
+                                            'Aucune session terminée',
+                                            style: theme.textTheme.titleMedium?.copyWith(
+                                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                )
+                              : ListView.separated(
+                                  physics: const BouncingScrollPhysics(),
+                                  itemCount: sessions.length,
+                                  separatorBuilder: (_, __) => const SizedBox(height: 12),
+                                  itemBuilder: (context, index) {
+                                    final session = sessions[index];
+                                    final duration = session.currentDuration;
+
+                                    return GlassCard(
+                                      onTap: () => _resumeSession(session),
+                                      child: Row(
+                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        children: [
+                                          Container(
+                                            padding: const EdgeInsets.all(14),
+                                            decoration: BoxDecoration(
+                                              color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                                              borderRadius: BorderRadius.circular(18),
+                                            ),
+                                            child: Icon(
+                                              Icons.timer_rounded,
+                                              color: theme.colorScheme.primary,
+                                              size: 28,
+                                            ),
+                                          ),
+                                          const SizedBox(width: 16),
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  _formatDuration(duration),
+                                                  style: theme.textTheme.titleMedium?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                  ),
+                                                ),
+                                                const SizedBox(height: 6),
+                                                Text(
+                                                  'Début: ${_formatDateTime(session.startTime)}',
+                                                  style: theme.textTheme.bodyMedium?.copyWith(
+                                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                                  ),
+                                                ),
+                                                if (session.endTime != null)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 4),
+                                                    child: Text(
+                                                      'Fin: ${_formatDateTime(session.endTime!)}',
+                                                      style: theme.textTheme.bodyMedium?.copyWith(
+                                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                                      ),
+                                                    ),
+                                                  ),
+                                                if (session.totalPausedDuration > 0)
+                                                  Padding(
+                                                    padding: const EdgeInsets.only(top: 6),
+                                                    child: Row(
+                                                      children: [
+                                                        Icon(
+                                                          Icons.pause_circle_filled,
+                                                          color: theme.colorScheme.secondary,
+                                                          size: 18,
+                                                        ),
+                                                        const SizedBox(width: 6),
+                                                        Text(
+                                                          'Pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
+                                                          style: theme.textTheme.bodySmall?.copyWith(
+                                                            color: theme.colorScheme.secondary,
+                                                            fontWeight: FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                      ],
+                                                    ),
+                                                  ),
+                                              ],
+                                            ),
+                                          ),
+                                          PopupMenuButton(
+                                            itemBuilder: (context) => [
+                                              PopupMenuItem(
+                                                value: 'resume',
+                                                child: const Row(
+                                                  children: [
+                                                    Icon(Icons.play_arrow),
+                                                    SizedBox(width: 8),
+                                                    Text('Reprendre'),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 'logs',
+                                                child: const Row(
+                                                  children: [
+                                                    Icon(Icons.list_alt),
+                                                    SizedBox(width: 8),
+                                                    Text('Voir les logs'),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem(
+                                                value: 'delete',
+                                                child: const Row(
+                                                  children: [
+                                                    Icon(Icons.delete, color: Colors.red),
+                                                    SizedBox(width: 8),
+                                                    Text('Supprimer'),
+                                                  ],
+                                                ),
+                                              ),
+                                            ],
+                                            onSelected: (value) {
+                                              if (value == 'resume') {
+                                                _resumeSession(session);
+                                              } else if (value == 'logs') {
+                                                Navigator.push(
+                                                  context,
+                                                  MaterialPageRoute(
+                                                    builder: (context) => SessionLogsScreen(session: session),
+                                                  ),
+                                                );
+                                              } else if (value == 'delete') {
+                                                _deleteSession(session);
+                                              }
+                                            },
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  },
+                                ),
                         ),
                       ),
                     ],
                   ),
-                )
-              : RefreshIndicator(
-                  onRefresh: _controller.loadSessions,
-                  child: ListView.builder(
-                    itemCount: sessions.length,
-                    itemBuilder: (context, index) {
-                      final session = sessions[index];
-                      final duration = session.currentDuration;
-
-                      return Card(
-                        margin: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 8,
-                        ),
-                        child: ListTile(
-                          leading: CircleAvatar(
-                            backgroundColor: Theme.of(context).colorScheme.primary,
-                            child: Icon(
-                              Icons.timer,
-                              color: Theme.of(context).colorScheme.onPrimary,
-                            ),
-                          ),
-                          title: Text(
-                            _formatDuration(duration),
-                            style: const TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          subtitle: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text('Début: ${_formatDateTime(session.startTime)}'),
-                              if (session.endTime != null)
-                                Text('Fin: ${_formatDateTime(session.endTime!)}'),
-                              if (session.totalPausedDuration > 0)
-                                Text(
-                                  'Temps de pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
-                                ),
-                            ],
-                          ),
-                          trailing: PopupMenuButton(
-                            itemBuilder: (context) => [
-                              PopupMenuItem(
-                                value: 'resume',
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.play_arrow),
-                                    SizedBox(width: 8),
-                                    Text('Reprendre'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'logs',
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.list_alt),
-                                    SizedBox(width: 8),
-                                    Text('Voir les logs'),
-                                  ],
-                                ),
-                              ),
-                              PopupMenuItem(
-                                value: 'delete',
-                                child: const Row(
-                                  children: [
-                                    Icon(Icons.delete, color: Colors.red),
-                                    SizedBox(width: 8),
-                                    Text('Supprimer'),
-                                  ],
-                                ),
-                              ),
-                            ],
-                            onSelected: (value) {
-                              if (value == 'resume') {
-                                _resumeSession(session);
-                              } else if (value == 'logs') {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => SessionLogsScreen(session: session),
-                                  ),
-                                );
-                              } else if (value == 'delete') {
-                                _deleteSession(session);
-                              }
-                            },
-                          ),
-                        ),
-                      );
-                    },
-                  ),
                 ),
+        ),
+      ),
     );
   }
 }
