@@ -245,6 +245,16 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
                                                   ),
                                                 ),
                                               ),
+                                      if (log.latitude != null && log.longitude != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(top: 8),
+                                              child: Text(
+                                                'Position: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
+                                                style: theme.textTheme.bodySmall?.copyWith(
+                                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                                ),
+                                              ),
+                                            ),
                                           ],
                                         ),
                                       ),
@@ -261,4 +271,5 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
       ),
     );
   }
+
 }

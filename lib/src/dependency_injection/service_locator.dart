@@ -1,3 +1,4 @@
+import '../core/location/location_service.dart';
 import '../data/datasources/session_local_data_source.dart';
 import '../data/datasources/settings_local_data_source.dart';
 import '../data/datasources/timer_local_data_source.dart';
@@ -33,6 +34,7 @@ class AppDependencies {
   static final AppDependencies instance = AppDependencies._();
 
   late final SessionLocalDataSource _sessionLocalDataSource;
+  late final LocationService _locationService;
   late final TimerLocalDataSource _timerLocalDataSource;
   late final SettingsLocalDataSource _settingsLocalDataSource;
 
@@ -63,7 +65,11 @@ class AppDependencies {
   void _configure() {
     _sessionLocalDataSource = SessionLocalDataSource();
     _settingsLocalDataSource = SettingsLocalDataSource();
-    _timerLocalDataSource = TimerLocalDataSource(_sessionLocalDataSource);
+    _locationService = LocationService();
+    _timerLocalDataSource = TimerLocalDataSource(
+      _sessionLocalDataSource,
+      _locationService,
+    );
 
     sessionRepository = SessionRepositoryImpl(_sessionLocalDataSource);
     timerRepository = TimerRepositoryImpl(_timerLocalDataSource);

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-
 import '../../domain/entities/session_log.dart';
 import '../controllers/all_logs_controller.dart';
 import '../widgets/glass_card.dart';
@@ -285,6 +284,16 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
                                                     ),
                                                   ),
                                                 ),
+                                              if (log.latitude != null && log.longitude != null)
+                                                Padding(
+                                                  padding: const EdgeInsets.only(top: 6),
+                                                  child: Text(
+                                                    'Position: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
+                                                    style: theme.textTheme.bodySmall?.copyWith(
+                                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                                                    ),
+                                                  ),
+                                                ),
                                               if (session != null) ...[
                                                 const SizedBox(height: 8),
                                                 Text(
@@ -319,4 +328,5 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
       ),
     );
   }
+
 }
