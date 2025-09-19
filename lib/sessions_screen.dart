@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'models/timer_session.dart';
 import 'services/database_service.dart';
 import 'services/timer_service.dart';
+import 'session_logs_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
   final TimerService timerService;
@@ -162,6 +163,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                 ),
                               ),
                               PopupMenuItem(
+                                value: 'logs',
+                                child: const Row(
+                                  children: [
+                                    Icon(Icons.list_alt),
+                                    SizedBox(width: 8),
+                                    Text('Voir les logs'),
+                                  ],
+                                ),
+                              ),
+                              PopupMenuItem(
                                 value: 'delete',
                                 child: const Row(
                                   children: [
@@ -175,6 +186,13 @@ class _SessionsScreenState extends State<SessionsScreen> {
                             onSelected: (value) {
                               if (value == 'resume') {
                                 _resumeSession(session);
+                              } else if (value == 'logs') {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => SessionLogsScreen(session: session),
+                                  ),
+                                );
                               } else if (value == 'delete') {
                                 _deleteSession(session);
                               }

@@ -5,26 +5,56 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
-import 'package:timer/main.dart';
+import 'package:timer/models/session_log.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  group('SessionLog Model Tests', () {
+    test('SessionLog creation and serialization', () {
+      final log = SessionLog(
+        id: 1,
+        sessionId: 123,
+        timestamp: DateTime(2024, 1, 1, 12, 0, 0),
+        action: SessionAction.start,
+        details: 'Test start action',
+      );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+      expect(log.id, 1);
+      expect(log.sessionId, 123);
+      expect(log.action, SessionAction.start);
+      expect(log.details, 'Test start action');
+    });
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
+    test('SessionLog toMap and fromMap', () {
+      final originalLog = SessionLog(
+        id: 1,
+        sessionId: 123,
+        timestamp: DateTime(2024, 1, 1, 12, 0, 0),
+        action: SessionAction.pause,
+        details: 'Test pause action',
+      );
 
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+      final map = originalLog.toMap();
+      final recreatedLog = SessionLog.fromMap(map);
+
+      expect(recreatedLog.id, originalLog.id);
+      expect(recreatedLog.sessionId, originalLog.sessionId);
+      expect(recreatedLog.timestamp, originalLog.timestamp);
+      expect(recreatedLog.action, originalLog.action);
+      expect(recreatedLog.details, originalLog.details);
+    });
+
+    test('SessionAction enum values', () {
+      expect(SessionAction.start.name, 'start');
+      expect(SessionAction.start.displayName, 'Démarrage');
+      expect(SessionAction.pause.name, 'pause');
+      expect(SessionAction.pause.displayName, 'Pause');
+      expect(SessionAction.resume.name, 'resume');
+      expect(SessionAction.resume.displayName, 'Reprise');
+      expect(SessionAction.stop.name, 'stop');
+      expect(SessionAction.stop.displayName, 'Arrêt');
+      expect(SessionAction.resumeSession.name, 'resume_session');
+      expect(SessionAction.resumeSession.displayName, 'Reprise de session');
+    });
   });
 }

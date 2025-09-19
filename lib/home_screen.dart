@@ -7,6 +7,8 @@ import 'models/timer_session.dart';
 import 'sessions_screen.dart';
 import 'settings_screen.dart';
 import 'about_screen.dart';
+import 'session_logs_screen.dart';
+import 'all_logs_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -262,6 +264,19 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
+            leading: const Icon(Icons.list_alt),
+            title: const Text('Logs'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AllLogsScreen(),
+                ),
+              );
+            },
+          ),
+          ListTile(
             leading: const Icon(Icons.settings),
             title: const Text('Réglages'),
             onTap: () async {
@@ -374,9 +389,26 @@ class _HomeScreenState extends State<HomeScreen> {
                               ],
                             ),
                           ),
-                          Icon(
-                            Icons.play_arrow,
-                            color: Theme.of(context).colorScheme.primary,
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                onPressed: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => SessionLogsScreen(session: session),
+                                    ),
+                                  );
+                                },
+                                icon: const Icon(Icons.list_alt),
+                                tooltip: 'Voir les logs',
+                              ),
+                              Icon(
+                                Icons.play_arrow,
+                                color: Theme.of(context).colorScheme.primary,
+                              ),
+                            ],
                           ),
                         ],
                       ),

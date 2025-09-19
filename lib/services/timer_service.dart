@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../models/timer_session.dart';
+import '../models/session_log.dart';
 import 'database_service.dart';
 
 class TimerService {
@@ -127,6 +128,9 @@ class TimerService {
       _currentSession = session.copyWith(id: id);
       _totalPausedDuration = 0;
 
+      // Log the start action
+      await _logAction(SessionAction.start, details: 'Nouvelle session démarrée');
+
       // Reset display to zero for new session
       _durationController.add(Duration.zero);
     } else if (_currentSession!.isPaused) {
@@ -142,6 +146,9 @@ class TimerService {
       await DatabaseService.updateSession(_currentSession!.copyWith(
         totalPausedDuration: _totalPausedDuration,
       ));
+
+      // Log the resume action
+      await _logAction(SessionAction.resume, details: 'Reprise après pause');
     } else if (!_currentSession!.isRunning) {
       // Resume from ready state (resumed session)
       if (_frozenDuration != null) {
@@ -176,6 +183,10 @@ class TimerService {
         totalPausedDuration: _totalPausedDuration,
       ));
       await _savePauseState();
+
+      // Log the pause action
+      await _logAction(SessionAction.pause, details: 'Mise en pause');
+
       _stateController.add(TimerState.paused);
     }
   }
@@ -207,6 +218,9 @@ class TimerService {
       );
 
       await DatabaseService.updateSession(endedSession);
+
+      // Log the stop action
+      await _logAction(SessionAction.stop, details: 'Session terminée');
 
       // Calculate final duration to display
       final finalDuration = endTime.difference(_currentSession!.startTime).inMilliseconds - _totalPausedDuration;
@@ -251,6 +265,9 @@ class TimerService {
     // Update the existing session in database to mark it as active again
     await DatabaseService.updateSession(_currentSession!);
 
+    // Log the resume session action
+    await _logAction(SessionAction.resumeSession, details: 'Reprise de session antérieure');
+
     // Clear any old SharedPreferences data when resuming a session
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_pauseStartTimeKey);
@@ -260,6 +277,18 @@ class TimerService {
     _timer?.cancel();
     _durationController.add(previousDuration);
     _stateController.add(TimerState.ready);
+  }
+
+  Future<void> _logAction(SessionAction action, {String? details}) async {
+    if (_currentSession?.id != null) {
+      final log = SessionLog(
+        sessionId: _currentSession!.id!,
+        timestamp: DateTime.now(),
+        action: action,
+        details: details,
+      );
+      await DatabaseService.insertSessionLog(log);
+    }
   }
 
   void dispose() {
