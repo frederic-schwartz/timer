@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:timer/src/domain/entities/session_log.dart';
+import 'package:tockee/src/domain/entities/session_log.dart';
 
 void main() {
   group('SessionLog entity', () {

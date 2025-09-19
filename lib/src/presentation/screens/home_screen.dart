@@ -52,29 +52,29 @@ class _HomeScreenState extends State<HomeScreen> {
     await _controller.stopTimer();
   }
 
-  Color _getTimerColor(TimerState state) {
+  Color _stateColor(TimerState state, ThemeData theme) {
     switch (state) {
       case TimerState.running:
-        return Colors.green;
+        return theme.colorScheme.primary;
       case TimerState.paused:
-        return Colors.orange;
-      case TimerState.stopped:
-        return Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6);
+        return theme.colorScheme.secondary;
       case TimerState.ready:
-        return Colors.blue;
+        return theme.colorScheme.tertiary;
+      case TimerState.stopped:
+        return theme.colorScheme.primary;
     }
   }
 
-  String _getStateText(TimerState state) {
+  String _stateLabel(TimerState state) {
     switch (state) {
       case TimerState.running:
-        return 'En cours...';
+        return 'En cours';
       case TimerState.paused:
         return 'En pause';
+      case TimerState.ready:
+        return 'Prêt à reprendre';
       case TimerState.stopped:
         return 'Arrêté';
-      case TimerState.ready:
-        return 'Prêt';
     }
   }
 
@@ -89,183 +89,31 @@ class _HomeScreenState extends State<HomeScreen> {
     return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  Widget _buildControlButton({
-    required IconData icon,
-    required String label,
-    required Color color,
-    required VoidCallback? onPressed,
-  }) {
-    return ElevatedButton.icon(
-      onPressed: onPressed,
-      icon: Icon(icon, size: 28),
-      label: Text(
-        label,
-        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-      ),
-      style: ElevatedButton.styleFrom(
-        backgroundColor: color,
-        foregroundColor: Colors.white,
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(12),
-        ),
-        elevation: 4,
-      ),
-    );
-  }
-
-  Widget _buildPauseInfo(TimerState state) {
-    if (state == TimerState.stopped) {
-      return const SizedBox.shrink();
-    }
-
-    final totalPauseRealTime = _controller.totalPauseRealTime;
-
-    if (totalPauseRealTime.inSeconds > 0) {
-      return Text(
-        'Temps de pause total: ${_formatDuration(totalPauseRealTime)}',
-        style: TextStyle(
-          fontSize: 14,
-          color: state == TimerState.paused
-              ? Colors.orange
-              : Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-          fontWeight: state == TimerState.paused ? FontWeight.w500 : FontWeight.normal,
-        ),
-      );
-    }
-
-    return const SizedBox.shrink();
-  }
-
-  Widget _buildRecentSessions(List<TimerSession> sessions) {
-    if (sessions.isEmpty) {
-      return const SizedBox.shrink();
-    }
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-          child: Text(
-            'Sessions récentes',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w600,
-              color: Theme.of(context).colorScheme.onSurface,
-            ),
-          ),
-        ),
-        Expanded(
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            itemCount: sessions.length,
-            itemBuilder: (context, index) {
-              final session = sessions[index];
-              return Container(
-                margin: const EdgeInsets.only(bottom: 8),
-                child: Card(
-                  child: InkWell(
-                    onTap: () => _controller.resumeSession(session),
-                    borderRadius: BorderRadius.circular(12),
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Row(
-                        children: [
-                          Container(
-                            padding: const EdgeInsets.all(12),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Icon(
-                              Icons.timer,
-                              color: Theme.of(context).colorScheme.primary,
-                              size: 24,
-                            ),
-                          ),
-                          const SizedBox(width: 16),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  _formatDuration(session.currentDuration),
-                                  style: const TextStyle(
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  _formatDateTime(session.startTime),
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
-                                  ),
-                                ),
-                                if (session.totalPausedDuration > 0) ...[
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'Pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
-                                    style: const TextStyle(
-                                      fontSize: 12,
-                                      color: Colors.orange,
-                                    ),
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ),
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              IconButton(
-                                onPressed: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => SessionLogsScreen(session: session),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(Icons.list_alt),
-                                tooltip: 'Voir les logs',
-                              ),
-                              Icon(
-                                Icons.play_arrow,
-                                color: Theme.of(context).colorScheme.primary,
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Drawer _buildDrawer() {
+  Drawer _buildDrawer(ThemeData theme) {
     return Drawer(
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
           DrawerHeader(
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary,
+              gradient: LinearGradient(
+                colors: [
+                  theme.colorScheme.primary,
+                  theme.colorScheme.primaryContainer,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-            child: Text(
-              'Tockee',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
+            child: Align(
+              alignment: Alignment.bottomLeft,
+              child: Text(
+                'Tockee',
+                style: TextStyle(
+                  color: theme.colorScheme.onPrimary,
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
             ),
           ),
@@ -311,7 +159,7 @@ class _HomeScreenState extends State<HomeScreen> {
             },
           ),
           ListTile(
-            leading: const Icon(Icons.info),
+            leading: const Icon(Icons.info_outline),
             title: const Text('À propos'),
             onTap: () {
               Navigator.pop(context);
@@ -328,84 +176,407 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  Widget _buildTimerHero(BuildContext context, TimerState state) {
+    final theme = Theme.of(context);
+    final accent = _stateColor(state, theme);
+    final pauseLabel = _controller.totalPauseRealTime.inSeconds > 0
+        ? _formatDuration(_controller.totalPauseRealTime)
+        : '—';
+
+    return Container(
+      padding: const EdgeInsets.all(28),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(28),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            theme.colorScheme.surface.withValues(alpha: 0.92),
+            theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.75),
+          ],
+        ),
+        border: Border.all(
+          color: theme.colorScheme.onSurface.withValues(alpha: 0.04),
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.08),
+            blurRadius: 30,
+            offset: const Offset(0, 20),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _StateBadge(label: _stateLabel(state), color: accent),
+          const SizedBox(height: 24),
+          Text(
+            _formatDuration(_controller.currentDuration),
+            style: TextStyle(
+              fontSize: 56,
+              fontWeight: FontWeight.w700,
+              letterSpacing: 1.2,
+              fontFeatures: const [FontFeature.tabularFigures()],
+              color: accent,
+            ),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            'Pause cumulée',
+            style: theme.textTheme.bodyMedium?.copyWith(
+              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+            ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            pauseLabel,
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          if (state == TimerState.paused) ...[
+            const SizedBox(height: 12),
+            Text(
+              'Pause en cours: ${_formatDuration(_controller.currentPauseDuration)}',
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: theme.colorScheme.secondary,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildControls(BuildContext context, TimerState state) {
+    final theme = Theme.of(context);
+
+    return Row(
+      children: [
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: state == TimerState.running ? _pauseTimer : _startTimer,
+            icon: Icon(state == TimerState.running ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 26),
+            label: Text(state == TimerState.running ? 'Pause' : 'Démarrer'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              backgroundColor: _stateColor(state, theme),
+              foregroundColor: theme.colorScheme.onPrimary,
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: FilledButton.icon(
+            onPressed: state != TimerState.stopped && state != TimerState.ready ? _stopTimer : null,
+            icon: const Icon(Icons.stop_rounded, size: 26),
+            label: const Text('Stop'),
+            style: FilledButton.styleFrom(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+              backgroundColor: theme.colorScheme.errorContainer,
+              foregroundColor: theme.colorScheme.onErrorContainer,
+              disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+              disabledForegroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildRecentSessionsList(BuildContext context, List<TimerSession> sessions) {
+    if (sessions.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              Icons.timer_off_rounded,
+              size: 56,
+              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+            ),
+            const SizedBox(height: 16),
+            Text(
+              'Pas encore de session récente',
+              style: Theme.of(context).textTheme.titleMedium?.copyWith(
+                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
+                  ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return ScrollConfiguration(
+      behavior: const ScrollBehavior().copyWith(overscroll: false, physics: const BouncingScrollPhysics()),
+      child: ListView.builder(
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
+        itemCount: sessions.length,
+        itemBuilder: (context, index) {
+          final session = sessions[index];
+          return Padding(
+            padding: EdgeInsets.only(bottom: index == sessions.length - 1 ? 0 : 12),
+            child: _RecentSessionCard(
+              session: session,
+              onResume: () => _controller.resumeSession(session),
+              onShowLogs: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => SessionLogsScreen(session: session),
+                  ),
+                );
+              },
+              durationLabel: _formatDuration(session.currentDuration),
+              startLabel: _formatDateTime(session.startTime),
+              pauseLabel: session.totalPausedDuration > 0
+                  ? _formatDuration(Duration(milliseconds: session.totalPausedDuration))
+                  : null,
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
     final state = _controller.currentState;
 
+    final backgroundGradient = LinearGradient(
+      colors: [
+        theme.colorScheme.primary.withValues(alpha: 0.9),
+        theme.colorScheme.primaryContainer.withValues(alpha: 0.85),
+        theme.colorScheme.surface,
+      ],
+      begin: Alignment.topCenter,
+      end: Alignment.bottomCenter,
+    );
+
     return Scaffold(
+      extendBodyBehindAppBar: true,
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: const Text('Tockee'),
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        foregroundColor: theme.colorScheme.onPrimary,
+        iconTheme: IconThemeData(color: theme.colorScheme.onPrimary),
       ),
-      drawer: _buildDrawer(),
-      body: _controller.isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.all(32),
-                  child: Column(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(32),
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          color: Theme.of(context).colorScheme.surface,
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.1),
-                              blurRadius: 8,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
-                        ),
-                        child: Text(
-                          _formatDuration(_controller.currentDuration),
-                          style: TextStyle(
-                            fontSize: 48,
-                            fontWeight: FontWeight.bold,
-                            color: _getTimerColor(state),
-                            fontFeatures: const [FontFeature.tabularFigures()],
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 48),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+      drawer: _buildDrawer(theme),
+      body: Container(
+        decoration: BoxDecoration(gradient: backgroundGradient),
+        child: SafeArea(
+          child: _controller.isLoading
+              ? const Center(child: CircularProgressIndicator())
+              : Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          _buildControlButton(
-                            icon: state == TimerState.running ? Icons.pause : Icons.play_arrow,
-                            label: state == TimerState.running ? 'Pause' : 'Start',
-                            color: state == TimerState.running ? Colors.orange : Colors.green,
-                            onPressed: state == TimerState.running ? _pauseTimer : _startTimer,
-                          ),
-                          _buildControlButton(
-                            icon: Icons.stop,
-                            label: 'Stop',
-                            color: Colors.red,
-                            onPressed: state != TimerState.stopped && state != TimerState.ready ? _stopTimer : null,
+                          _buildTimerHero(context, state),
+                          const SizedBox(height: 24),
+                          _buildControls(context, state),
+                          const SizedBox(height: 32),
+                          Text(
+                            'Sessions récentes',
+                            style: theme.textTheme.titleLarge?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                                ),
                           ),
                         ],
                       ),
-                      const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: 8),
+                    Expanded(
+                      child: _buildRecentSessionsList(
+                        context,
+                        _controller.recentSessions,
+                      ),
+                    ),
+                  ],
+                ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StateBadge extends StatelessWidget {
+  const _StateBadge({required this.label, required this.color});
+
+  final String label;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: color.withValues(alpha: 0.25)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(Icons.fiber_manual_record, size: 12, color: color),
+          const SizedBox(width: 8),
+          Text(
+            label.toUpperCase(),
+            style: theme.textTheme.labelSmall?.copyWith(
+              letterSpacing: 1.2,
+              fontWeight: FontWeight.w700,
+              color: color,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RecentSessionCard extends StatelessWidget {
+  const _RecentSessionCard({
+    required this.session,
+    required this.onResume,
+    required this.onShowLogs,
+    required this.durationLabel,
+    required this.startLabel,
+    this.pauseLabel,
+  });
+
+  final TimerSession session;
+  final VoidCallback onResume;
+  final VoidCallback onShowLogs;
+  final String durationLabel;
+  final String startLabel;
+  final String? pauseLabel;
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onResume,
+        borderRadius: BorderRadius.circular(24),
+        child: Ink(
+          decoration: BoxDecoration(
+            color: theme.colorScheme.surface.withValues(alpha: 0.9),
+            borderRadius: BorderRadius.circular(24),
+            border: Border.all(
+              color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.08),
+                blurRadius: 24,
+                offset: const Offset(0, 16),
+              ),
+            ],
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(14),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Icon(
+                    Icons.timer_rounded,
+                    color: theme.colorScheme.primary,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        _getStateText(state),
-                        style: TextStyle(
-                          fontSize: 18,
-                          color: _getTimerColor(state),
-                          fontWeight: FontWeight.w500,
+                        durationLabel,
+                        style: theme.textTheme.titleMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      _buildPauseInfo(state),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Début: $startLabel',
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      if (session.endTime != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Text(
+                            'Fin: ${_formatEndDate(session.endTime!)}',
+                            style: theme.textTheme.bodyMedium?.copyWith(
+                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                            ),
+                          ),
+                        ),
+                      if (pauseLabel != null)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 6),
+                          child: Row(
+                            children: [
+                              Icon(Icons.pause_circle_filled, color: theme.colorScheme.secondary, size: 20),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Pause: $pauseLabel',
+                                style: theme.textTheme.bodySmall?.copyWith(
+                                  color: theme.colorScheme.secondary,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
                     ],
                   ),
                 ),
-                Expanded(
-                  child: _buildRecentSessions(_controller.recentSessions),
+                Column(
+                  children: [
+                    IconButton(
+                      onPressed: onShowLogs,
+                      icon: const Icon(Icons.list_alt_rounded),
+                      tooltip: 'Voir les logs',
+                    ),
+                    const SizedBox(height: 12),
+                    Icon(
+                      Icons.play_arrow_rounded,
+                      color: theme.colorScheme.primary,
+                      size: 28,
+                    ),
+                  ],
                 ),
               ],
             ),
+          ),
+        ),
+      ),
     );
+  }
+
+  String _formatEndDate(DateTime endTime) {
+    return '${endTime.day.toString().padLeft(2, '0')}/${endTime.month.toString().padLeft(2, '0')} ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
   }
 }
