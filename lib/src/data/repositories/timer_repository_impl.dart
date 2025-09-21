@@ -50,6 +50,9 @@ class TimerRepositoryImpl implements TimerRepository {
   }
 
   @override
+  Future<void> startNewSession() => _timerLocalDataSource.startNewSession();
+
+  @override
   TimerSnapshot snapshot() {
     return TimerSnapshot(
       currentDuration: _timerLocalDataSource.currentDuration,

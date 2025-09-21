@@ -4,6 +4,7 @@ import '../../domain/entities/session_log.dart';
 import '../../domain/entities/timer_session.dart';
 import '../controllers/session_logs_controller.dart';
 import '../widgets/glass_card.dart';
+import '../widgets/platform_map.dart';
 
 class SessionLogsScreen extends StatefulWidget {
   final TimerSession session;
@@ -98,7 +99,10 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
       await _controller.loadLogs(_session.id!);
     }
 
-    final recalculated = _recalculateSessionFromLogs(_session, _controller.logs);
+    final recalculated = _recalculateSessionFromLogs(
+      _session,
+      _controller.logs,
+    );
 
     if (recalculated.endTime != null &&
         recalculated.endTime!.isBefore(recalculated.startTime)) {
@@ -117,8 +121,9 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
       session: _session,
       startTime: recalculated.startTime,
       endTime: recalculated.endTime,
-      totalPausedDuration:
-          Duration(milliseconds: recalculated.totalPausedDuration),
+      totalPausedDuration: Duration(
+        milliseconds: recalculated.totalPausedDuration,
+      ),
       isRunning: recalculated.isRunning,
       isPaused: recalculated.isPaused,
     );
@@ -132,9 +137,9 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
       _hasChanges = true;
     });
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('Horodatage mis à jour.')),
-    );
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('Horodatage mis à jour.')));
   }
 
   Future<DateTime?> _pickDateTime({
@@ -204,16 +209,18 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
           break;
         case SessionAction.resume:
           if (currentPauseStart != null) {
-            totalPausedMs +=
-                log.timestamp.difference(currentPauseStart).inMilliseconds;
+            totalPausedMs += log.timestamp
+                .difference(currentPauseStart)
+                .inMilliseconds;
             currentPauseStart = null;
           }
           break;
         case SessionAction.stop:
           endTime = log.timestamp;
           if (currentPauseStart != null) {
-            totalPausedMs +=
-                log.timestamp.difference(currentPauseStart).inMilliseconds;
+            totalPausedMs += log.timestamp
+                .difference(currentPauseStart)
+                .inMilliseconds;
             currentPauseStart = null;
           }
           break;
@@ -271,183 +278,286 @@ class _SessionLogsScreenState extends State<SessionLogsScreen> {
           foregroundColor: theme.colorScheme.onPrimary,
         ),
         body: Container(
-        decoration: BoxDecoration(gradient: gradient),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GlassCard(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Session du ${_formatDateTime(_session.startTime)}',
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                'Durée totale',
-                                style: theme.textTheme.bodyMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                ),
-                              ),
-                              const SizedBox(height: 4),
-                              Text(
-                                _formatDuration(_session.currentDuration),
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+          decoration: BoxDecoration(gradient: gradient),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GlassCard(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Session du ${_formatDateTime(_session.startTime)}',
+                          style: theme.textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.w700,
                           ),
-                          if (_session.totalPausedDuration > 0)
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
                             Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  'Temps de pause',
+                                  'Durée totale',
                                   style: theme.textTheme.bodyMedium?.copyWith(
-                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                                    color: theme.colorScheme.onSurface
+                                        .withValues(alpha: 0.7),
                                   ),
                                 ),
                                 const SizedBox(height: 4),
                                 Text(
-                                  _formatDuration(
-                                    Duration(milliseconds: _session.totalPausedDuration),
-                                  ),
+                                  _formatDuration(_session.currentDuration),
                                   style: theme.textTheme.titleMedium?.copyWith(
                                     fontWeight: FontWeight.w600,
-                                    color: theme.colorScheme.secondary,
                                   ),
                                 ),
                               ],
                             ),
-                        ],
+                            if (_session.totalPausedDuration > 0)
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Temps de pause',
+                                    style: theme.textTheme.bodyMedium?.copyWith(
+                                      color: theme.colorScheme.onSurface
+                                          .withValues(alpha: 0.7),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _formatDuration(
+                                      Duration(
+                                        milliseconds:
+                                            _session.totalPausedDuration,
+                                      ),
+                                    ),
+                                    style: theme.textTheme.titleMedium
+                                        ?.copyWith(
+                                          fontWeight: FontWeight.w600,
+                                          color: theme.colorScheme.secondary,
+                                        ),
+                                  ),
+                                ],
+                              ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  Text(
+                    'Historique des actions (${logs.length})',
+                    style: theme.textTheme.titleLarge?.copyWith(
+                      fontWeight: FontWeight.w700,
+                      color: theme.colorScheme.onSurface.withValues(
+                        alpha: 0.85,
                       ),
-                    ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Text(
-                  'Historique des actions (${logs.length})',
-                  style: theme.textTheme.titleLarge?.copyWith(
-                    fontWeight: FontWeight.w700,
-                    color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Expanded(
-                  child: _controller.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : logs.isEmpty
-                          ? Center(
-                              child: Text(
-                                'Aucun log disponible pour cette session',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: _controller.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : logs.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Aucun log disponible pour cette session',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
-                            )
-                          : ListView.separated(
-                              physics: const BouncingScrollPhysics(),
-                              itemCount: logs.length,
-                              separatorBuilder: (_, __) => const SizedBox(height: 12),
-                              itemBuilder: (context, index) {
-                                final log = logs[index];
+                            ),
+                          )
+                        : ListView.separated(
+                            physics: const BouncingScrollPhysics(),
+                            itemCount: logs.length,
+                            separatorBuilder: (_, __) =>
+                                const SizedBox(height: 12),
+                            itemBuilder: (context, index) {
+                              final log = logs[index];
 
-                                return GlassCard(
-                                  padding: const EdgeInsets.all(18),
-                                  child: Row(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.all(12),
-                                        decoration: BoxDecoration(
-                                          color: _getActionColor(log.action).withValues(alpha: 0.15),
-                                          shape: BoxShape.circle,
-                                        ),
-                                        child: Icon(
-                                          _getActionIcon(log.action),
-                                          color: _getActionColor(log.action),
-                                        ),
+                              return GlassCard(
+                                padding: const EdgeInsets.all(18),
+                                child: Row(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: _getActionColor(
+                                          log.action,
+                                        ).withValues(alpha: 0.15),
+                                        shape: BoxShape.circle,
                                       ),
-                                      const SizedBox(width: 16),
-                                      Expanded(
-                                        child: Column(
-                                          crossAxisAlignment: CrossAxisAlignment.start,
-                                          children: [
-                                            Text(
-                                              _formatDateTime(log.timestamp),
-                                              style: theme.textTheme.bodySmall?.copyWith(
-                                                fontWeight: FontWeight.w600,
-                                                color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                              ),
-                                            ),
-                                            const SizedBox(height: 6),
-                                            Text(
-                                              log.action.displayName,
-                                              style: theme.textTheme.titleMedium?.copyWith(
-                                                fontWeight: FontWeight.w700,
-                                                color: _getActionColor(log.action),
-                                              ),
-                                            ),
-                                            if (log.details != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 6),
-                                                child: Text(
-                                                  log.details!,
-                                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                                  ),
-                                                ),
-                                              ),
-                                            if (log.latitude != null && log.longitude != null)
-                                              Padding(
-                                                padding: const EdgeInsets.only(top: 8),
-                                                child: Text(
-                                                  'Position: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
-                                                  style: theme.textTheme.bodySmall?.copyWith(
-                                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                                  ),
-                                                ),
-                                              ),
-                                          ],
-                                        ),
+                                      child: Icon(
+                                        _getActionIcon(log.action),
+                                        color: _getActionColor(log.action),
                                       ),
-                                      Column(
-                                        mainAxisSize: MainAxisSize.min,
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          IconButton(
-                                            icon: const Icon(Icons.edit_outlined),
-                                            tooltip: 'Modifier l\'heure',
-                                            onPressed: () => _editLog(log),
+                                          Text(
+                                            _formatDateTime(log.timestamp),
+                                            style: theme.textTheme.bodySmall
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w600,
+                                                  color: theme
+                                                      .colorScheme
+                                                      .onSurface
+                                                      .withValues(alpha: 0.7),
+                                                ),
                                           ),
-                                          const Icon(Icons.chevron_right_rounded),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            log.action.displayName,
+                                            style: theme.textTheme.titleMedium
+                                                ?.copyWith(
+                                                  fontWeight: FontWeight.w700,
+                                                  color: _getActionColor(
+                                                    log.action,
+                                                  ),
+                                                ),
+                                          ),
+                                          if (log.details != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 6,
+                                              ),
+                                              child: Text(
+                                                log.details!,
+                                                style: theme
+                                                    .textTheme
+                                                    .bodyMedium
+                                                    ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                            alpha: 0.7,
+                                                          ),
+                                                    ),
+                                              ),
+                                            ),
+                                          if (log.latitude != null &&
+                                              log.longitude != null)
+                                            Padding(
+                                              padding: const EdgeInsets.only(
+                                                top: 8,
+                                              ),
+                                              child: Text(
+                                                'Position: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                            alpha: 0.6,
+                                                          ),
+                                                    ),
+                                              ),
+                                            ),
                                         ],
                                       ),
-                                    ],
-                                  ),
-                                );
-                             },
-                           ),
-                ),
-              ],
+                                    ),
+                                    Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        if (log.latitude != null &&
+                                            log.longitude != null)
+                                          IconButton(
+                                            icon: const Icon(
+                                              Icons.map_outlined,
+                                            ),
+                                            tooltip: 'Voir sur la carte',
+                                            onPressed: () =>
+                                                _showLogLocation(log),
+                                          ),
+                                        IconButton(
+                                          icon: const Icon(Icons.edit_outlined),
+                                          tooltip: 'Modifier l\'heure',
+                                          onPressed: () => _editLog(log),
+                                        ),
+                                      ],
+                                    ),
+                                  ],
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
-      ),
     );
   }
 
+  void _showLogLocation(SessionLog log) {
+    if (log.latitude == null || log.longitude == null) return;
+
+    showModalBottomSheet<void>(
+      context: context,
+      showDragHandle: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return Padding(
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                log.action.displayName,
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
+              ),
+              const SizedBox(height: 12),
+              SizedBox(
+                height: 200,
+                child: PlatformMap(
+                  center: PlatformMapMarker(
+                    latitude: log.latitude!,
+                    longitude: log.longitude!,
+                  ),
+                  markers: [
+                    PlatformMapMarker(
+                      latitude: log.latitude!,
+                      longitude: log.longitude!,
+                    ),
+                  ],
+                  zoom: 15,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                'Coordonnées: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
+                style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                  color: Theme.of(
+                    context,
+                  ).colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
 }

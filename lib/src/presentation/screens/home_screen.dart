@@ -52,6 +52,44 @@ class _HomeScreenState extends State<HomeScreen> {
     await _controller.stopTimer();
   }
 
+  Future<void> _handleResumeSession(
+    BuildContext context,
+    TimerSession session,
+  ) async {
+    final state = _controller.currentState;
+    if (state == TimerState.running || state == TimerState.paused) {
+      final confirmStop = await showDialog<bool>(
+        context: context,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Session en cours'),
+          content: const Text(
+            'Une session est déjà en cours. Voulez-vous l\'arrêter pour reprendre celle sélectionnée ?',
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, false),
+              child: const Text('Annuler'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, true),
+              child: const Text('Arrêter et reprendre'),
+            ),
+          ],
+        ),
+      );
+
+      if (confirmStop != true) {
+        return;
+      }
+
+      await _controller.stopTimer();
+      await _controller.refreshTimerSnapshot();
+    }
+
+    await _controller.resumeSession(session);
+    await _controller.refreshTimerSnapshot();
+  }
+
   Color _stateColor(TimerState state, ThemeData theme) {
     switch (state) {
       case TimerState.running:
@@ -122,26 +160,29 @@ class _HomeScreenState extends State<HomeScreen> {
             title: const Text('Historique'),
             onTap: () async {
               Navigator.pop(context);
-              await Navigator.push(
+              final shouldRefresh = await Navigator.push<bool>(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SessionsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SessionsScreen()),
               );
-              await _controller.loadRecentSessions();
+              if (shouldRefresh == true) {
+                await _controller.loadRecentSessions();
+                await _controller.refreshTimerSnapshot();
+              }
             },
           ),
           ListTile(
             leading: const Icon(Icons.list_alt),
             title: const Text('Logs'),
-            onTap: () {
+            onTap: () async {
               Navigator.pop(context);
-              Navigator.push(
+              final shouldRefresh = await Navigator.push<bool>(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AllLogsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const AllLogsScreen()),
               );
+              if (shouldRefresh == true) {
+                await _controller.loadRecentSessions();
+                await _controller.refreshTimerSnapshot();
+              }
             },
           ),
           ListTile(
@@ -151,9 +192,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               await Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const SettingsScreen()),
               );
               await _controller.loadRecentSessions();
             },
@@ -165,9 +204,7 @@ class _HomeScreenState extends State<HomeScreen> {
               Navigator.pop(context);
               Navigator.push(
                 context,
-                MaterialPageRoute(
-                  builder: (context) => const AboutScreen(),
-                ),
+                MaterialPageRoute(builder: (context) => const AboutScreen()),
               );
             },
           ),
@@ -258,50 +295,101 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final isRunning = state == TimerState.running;
     final isPaused = state == TimerState.paused;
+    final isReady = state == TimerState.ready;
     final primaryLabel = isRunning
         ? 'Pause'
         : isPaused
-            ? 'Reprendre'
-            : 'Démarrer';
+        ? 'Reprendre'
+        : 'Démarrer';
 
-    return Row(
-      children: [
+    final buttons = <Widget>[];
+
+    if (isReady) {
+      buttons.add(
         Expanded(
-          child: FilledButton.icon(
-            onPressed: isRunning ? _pauseTimer : _startTimer,
-            icon: Icon(isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 26),
-            label: Text(primaryLabel),
+          child: FilledButton.tonalIcon(
+            onPressed: () => _controller.startNewSession(),
+            icon: const Icon(Icons.refresh_rounded, size: 24),
+            label: const Text('Recommencer'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              backgroundColor: _stateColor(state, theme),
-              foregroundColor: theme.colorScheme.onPrimary,
+              textStyle: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(18),
+              ),
             ),
           ),
         ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: FilledButton.icon(
-            onPressed: state != TimerState.stopped && state != TimerState.ready ? _stopTimer : null,
-            icon: const Icon(Icons.stop_rounded, size: 26),
-            label: const Text('Stop'),
-            style: FilledButton.styleFrom(
-              padding: const EdgeInsets.symmetric(vertical: 18),
-              textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              backgroundColor: theme.colorScheme.errorContainer,
-              foregroundColor: theme.colorScheme.onErrorContainer,
-              disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
-              disabledForegroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
+      );
+      buttons.add(const SizedBox(width: 12));
+    }
+
+    buttons.add(
+      Expanded(
+        child: FilledButton.icon(
+          onPressed: isRunning ? _pauseTimer : _startTimer,
+          icon: Icon(
+            isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded,
+            size: 26,
+          ),
+          label: Text(primaryLabel),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
             ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            backgroundColor: _stateColor(state, theme),
+            foregroundColor: theme.colorScheme.onPrimary,
           ),
         ),
-      ],
+      ),
     );
+
+    buttons.add(const SizedBox(width: 12));
+
+    buttons.add(
+      Expanded(
+        child: FilledButton.icon(
+          onPressed: state != TimerState.stopped && state != TimerState.ready
+              ? _stopTimer
+              : null,
+          icon: const Icon(Icons.stop_rounded, size: 26),
+          label: const Text('Stop'),
+          style: FilledButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 18),
+            textStyle: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+            ),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(18),
+            ),
+            backgroundColor: theme.colorScheme.errorContainer,
+            foregroundColor: theme.colorScheme.onErrorContainer,
+            disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest
+                .withValues(alpha: 0.2),
+            disabledForegroundColor: theme.colorScheme.onSurface.withValues(
+              alpha: 0.4,
+            ),
+          ),
+        ),
+      ),
+    );
+
+    return Row(children: buttons);
   }
 
-  Widget _buildRecentSessionsList(BuildContext context, List<TimerSession> sessions) {
+  Widget _buildRecentSessionsList(
+    BuildContext context,
+    List<TimerSession> sessions,
+  ) {
     if (sessions.isEmpty) {
       return Center(
         child: Column(
@@ -310,14 +398,18 @@ class _HomeScreenState extends State<HomeScreen> {
             Icon(
               Icons.timer_off_rounded,
               size: 56,
-              color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.35),
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurface.withValues(alpha: 0.35),
             ),
             const SizedBox(height: 16),
             Text(
               'Pas encore de session récente',
               style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.7),
-                  ),
+                color: Theme.of(
+                  context,
+                ).colorScheme.onSurface.withValues(alpha: 0.7),
+              ),
             ),
           ],
         ),
@@ -325,17 +417,22 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return ScrollConfiguration(
-      behavior: const ScrollBehavior().copyWith(overscroll: false, physics: const BouncingScrollPhysics()),
+      behavior: const ScrollBehavior().copyWith(
+        overscroll: false,
+        physics: const BouncingScrollPhysics(),
+      ),
       child: ListView.builder(
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         itemCount: sessions.length,
         itemBuilder: (context, index) {
           final session = sessions[index];
           return Padding(
-            padding: EdgeInsets.only(bottom: index == sessions.length - 1 ? 0 : 12),
+            padding: EdgeInsets.only(
+              bottom: index == sessions.length - 1 ? 0 : 12,
+            ),
             child: _RecentSessionCard(
               session: session,
-              onResume: () => _controller.resumeSession(session),
+              onResume: () => _handleResumeSession(context, session),
               onShowLogs: () async {
                 final shouldRefresh = await Navigator.push<bool>(
                   context,
@@ -351,7 +448,9 @@ class _HomeScreenState extends State<HomeScreen> {
               durationLabel: _formatDuration(session.currentDuration),
               startLabel: _formatDateTime(session.startTime),
               pauseLabel: session.totalPausedDuration > 0
-                  ? _formatDuration(Duration(milliseconds: session.totalPausedDuration))
+                  ? _formatDuration(
+                      Duration(milliseconds: session.totalPausedDuration),
+                    )
                   : null,
             ),
           );
@@ -406,9 +505,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           Text(
                             'Sessions récentes',
                             style: theme.textTheme.titleLarge?.copyWith(
-                                  fontWeight: FontWeight.w700,
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
-                                ),
+                              fontWeight: FontWeight.w700,
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.85,
+                              ),
+                            ),
                           ),
                         ],
                       ),
@@ -535,7 +636,9 @@ class _RecentSessionCard extends StatelessWidget {
                       Text(
                         'Début: $startLabel',
                         style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                          color: theme.colorScheme.onSurface.withValues(
+                            alpha: 0.7,
+                          ),
                         ),
                       ),
                       if (session.endTime != null)
@@ -544,7 +647,9 @@ class _RecentSessionCard extends StatelessWidget {
                           child: Text(
                             'Fin: ${_formatEndDate(session.endTime!)}',
                             style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                              color: theme.colorScheme.onSurface.withValues(
+                                alpha: 0.7,
+                              ),
                             ),
                           ),
                         ),
@@ -553,7 +658,11 @@ class _RecentSessionCard extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 6),
                           child: Row(
                             children: [
-                              Icon(Icons.pause_circle_filled, color: theme.colorScheme.secondary, size: 20),
+                              Icon(
+                                Icons.pause_circle_filled,
+                                color: theme.colorScheme.secondary,
+                                size: 20,
+                              ),
                               const SizedBox(width: 6),
                               Text(
                                 'Pause: $pauseLabel',

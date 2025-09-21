@@ -21,6 +21,7 @@ import '../domain/usecases/initialize_timer.dart';
 import '../domain/usecases/pause_timer.dart';
 import '../domain/usecases/resume_session.dart';
 import '../domain/usecases/set_recent_sessions_count.dart';
+import '../domain/usecases/start_new_session.dart';
 import '../domain/usecases/start_timer.dart';
 import '../domain/usecases/stop_timer.dart';
 import '../domain/usecases/update_session_log.dart';
@@ -49,6 +50,7 @@ class AppDependencies {
   late final PauseTimer pauseTimer;
   late final StopTimer stopTimer;
   late final ResumeSession resumeSession;
+  late final StartNewSession startNewSession;
   late final WatchTimerDuration watchTimerDuration;
   late final WatchTimerState watchTimerState;
   late final GetTimerSnapshot getTimerSnapshot;
@@ -84,6 +86,7 @@ class AppDependencies {
     pauseTimer = PauseTimer(timerRepository);
     stopTimer = StopTimer(timerRepository);
     resumeSession = ResumeSession(timerRepository);
+    startNewSession = StartNewSession(timerRepository);
     watchTimerDuration = WatchTimerDuration(timerRepository);
     watchTimerState = WatchTimerState(timerRepository);
     getTimerSnapshot = GetTimerSnapshot(timerRepository);

@@ -245,6 +245,19 @@ class TimerLocalDataSource {
     _durationController.add(_frozenDuration ?? Duration.zero);
   }
 
+  Future<void> startNewSession() async {
+    if (_currentSession != null) {
+      _currentSession = null;
+      _frozenDuration = null;
+      _pauseStartTime = null;
+      _totalPausedDuration = 0;
+      await _clearPauseState();
+      _stateController.add(TimerState.stopped);
+      _durationController.add(Duration.zero);
+    }
+    await startTimer();
+  }
+
   Future<void> _logAction(SessionAction action, {String? details}) async {
     double? latitude;
     double? longitude;

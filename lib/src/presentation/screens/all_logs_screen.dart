@@ -13,6 +13,7 @@ class AllLogsScreen extends StatefulWidget {
 
 class _AllLogsScreenState extends State<AllLogsScreen> {
   late final AllLogsController _controller;
+  bool _hasChanges = false;
 
   @override
   void initState() {
@@ -92,9 +93,7 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Supprimer tout'),
           ),
         ],
@@ -104,6 +103,7 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
     if (confirmed == true) {
       try {
         await _controller.clearAllLogs();
+        _hasChanges = true;
         if (context.mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -143,9 +143,9 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
             children: [
               Text(
                 log.action.displayName,
-                style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                    ),
+                style: Theme.of(
+                  context,
+                ).textTheme.titleLarge?.copyWith(fontWeight: FontWeight.w700),
               ),
               const SizedBox(height: 12),
               Row(
@@ -194,15 +194,11 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
                 Text(
                   'Coordonnées: ${log.latitude!.toStringAsFixed(5)}, '
                   '${log.longitude!.toStringAsFixed(5)}',
-                  style: Theme.of(context)
-                      .textTheme
-                      .bodySmall
-                      ?.copyWith(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onSurface
-                            .withValues(alpha: 0.6),
-                      ),
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
+                  ),
                 ),
               ],
               const SizedBox(height: 12),
@@ -252,156 +248,218 @@ class _AllLogsScreenState extends State<AllLogsScreen> {
       end: Alignment.bottomCenter,
     );
 
-    return Scaffold(
-      extendBodyBehindAppBar: true,
-      backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: const Text('Tous les logs'),
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        Navigator.pop(context, _hasChanges);
+      },
+      child: Scaffold(
+        extendBodyBehindAppBar: true,
         backgroundColor: Colors.transparent,
-        elevation: 0,
-        foregroundColor: theme.colorScheme.onPrimary,
-        actions: [
-          IconButton(
-            onPressed: () => _clearAllLogs(context),
-            icon: const Icon(Icons.delete_forever),
-            tooltip: 'Supprimer tous les logs',
+        appBar: AppBar(
+          leading: IconButton(
+            icon: const Icon(Icons.arrow_back),
+            onPressed: () => Navigator.pop(context, _hasChanges),
           ),
-        ],
-      ),
-      body: Container(
-        decoration: BoxDecoration(gradient: gradient),
-        child: SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                GlassCard(
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                  child: Wrap(
-                    spacing: 10,
-                    runSpacing: 10,
-                    children: [
-                      _buildFilterChip(label: 'Tous', value: 'all'),
-                      _buildFilterChip(label: 'Démarrages', value: 'start'),
-                      _buildFilterChip(label: 'Pauses', value: 'pause'),
-                      _buildFilterChip(label: 'Reprises', value: 'resume'),
-                      _buildFilterChip(label: 'Arrêts', value: 'stop'),
-                    ],
+          title: const Text('Tous les logs'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          foregroundColor: theme.colorScheme.onPrimary,
+          actions: [
+            IconButton(
+              onPressed: () => _clearAllLogs(context),
+              icon: const Icon(Icons.delete_forever),
+              tooltip: 'Supprimer tous les logs',
+            ),
+          ],
+        ),
+        body: Container(
+          decoration: BoxDecoration(gradient: gradient),
+          child: SafeArea(
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  GlassCard(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 16,
+                    ),
+                    child: Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: [
+                        _buildFilterChip(label: 'Tous', value: 'all'),
+                        _buildFilterChip(label: 'Démarrages', value: 'start'),
+                        _buildFilterChip(label: 'Pauses', value: 'pause'),
+                        _buildFilterChip(label: 'Reprises', value: 'resume'),
+                        _buildFilterChip(label: 'Arrêts', value: 'stop'),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 24),
-                Expanded(
-                  child: _controller.isLoading
-                      ? const Center(child: CircularProgressIndicator())
-                      : logs.isEmpty
-                          ? Center(
-                              child: Text(
-                                'Aucun log disponible',
-                                style: theme.textTheme.titleMedium?.copyWith(
-                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                  const SizedBox(height: 24),
+                  Expanded(
+                    child: _controller.isLoading
+                        ? const Center(child: CircularProgressIndicator())
+                        : logs.isEmpty
+                        ? Center(
+                            child: Text(
+                              'Aucun log disponible',
+                              style: theme.textTheme.titleMedium?.copyWith(
+                                color: theme.colorScheme.onSurface.withValues(
+                                  alpha: 0.6,
                                 ),
                               ),
-                            )
-                          : RefreshIndicator(
-                              onRefresh: _controller.loadData,
-                              child: ListView.separated(
-                                physics: const BouncingScrollPhysics(),
-                                itemCount: logs.length,
-                                separatorBuilder: (_, __) => const SizedBox(height: 12),
-                                itemBuilder: (context, index) {
-                                  final log = logs[index];
-                                  final session = _controller.sessionForLog(log);
-
-                                  return GlassCard(
-                                    padding: const EdgeInsets.all(18),
-                                    onTap: () => _showLogDetails(log),
-                                    child: Row(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
-                                      children: [
-                                        Container(
-                                          padding: const EdgeInsets.all(12),
-                                          decoration: BoxDecoration(
-                                            color: _getActionColor(log.action).withValues(alpha: 0.15),
-                                            shape: BoxShape.circle,
-                                          ),
-                                          child: Icon(
-                                            _getActionIcon(log.action),
-                                            color: _getActionColor(log.action),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 16),
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                log.action.displayName,
-                                                style: theme.textTheme.titleMedium?.copyWith(
-                                                  fontWeight: FontWeight.w700,
-                                                  color: _getActionColor(log.action),
-                                                ),
-                                              ),
-                                              const SizedBox(height: 4),
-                                              Text(
-                                                _formatDateTime(log.timestamp),
-                                                style: theme.textTheme.bodySmall?.copyWith(
-                                                  color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                                ),
-                                              ),
-                                              if (log.details != null)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 6),
-                                                  child: Text(
-                                                    log.details!,
-                                                    style: theme.textTheme.bodyMedium?.copyWith(
-                                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (log.latitude != null && log.longitude != null)
-                                                Padding(
-                                                  padding: const EdgeInsets.only(top: 6),
-                                                  child: Text(
-                                                    'Position: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
-                                                    style: theme.textTheme.bodySmall?.copyWith(
-                                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                                    ),
-                                                  ),
-                                                ),
-                                              if (session != null) ...[
-                                                const SizedBox(height: 8),
-                                                Text(
-                                                  'Session du ${_formatDateTime(session.startTime)}',
-                                                  style: theme.textTheme.bodySmall?.copyWith(
-                                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                                  ),
-                                                ),
-                                                if (session.endTime != null)
-                                                  Text(
-                                                    'Durée: ${_formatDuration(session.currentDuration)}',
-                                                    style: theme.textTheme.bodySmall?.copyWith(
-                                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-                                                    ),
-                                                  ),
-                                              ],
-                                            ],
-                                          ),
-                                        ),
-                                        const Icon(Icons.chevron_right_rounded),
-                                      ],
-                                    ),
-                                  );
-                                },
-                              ),
                             ),
-                ),
-              ],
+                          )
+                        : RefreshIndicator(
+                            onRefresh: _controller.loadData,
+                            child: ListView.separated(
+                              physics: const BouncingScrollPhysics(),
+                              itemCount: logs.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(height: 12),
+                              itemBuilder: (context, index) {
+                                final log = logs[index];
+                                final session = _controller.sessionForLog(log);
+
+                                return GlassCard(
+                                  padding: const EdgeInsets.all(18),
+                                  onTap: () => _showLogDetails(log),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        padding: const EdgeInsets.all(12),
+                                        decoration: BoxDecoration(
+                                          color: _getActionColor(
+                                            log.action,
+                                          ).withValues(alpha: 0.15),
+                                          shape: BoxShape.circle,
+                                        ),
+                                        child: Icon(
+                                          _getActionIcon(log.action),
+                                          color: _getActionColor(log.action),
+                                        ),
+                                      ),
+                                      const SizedBox(width: 16),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Text(
+                                              log.action.displayName,
+                                              style: theme.textTheme.titleMedium
+                                                  ?.copyWith(
+                                                    fontWeight: FontWeight.w700,
+                                                    color: _getActionColor(
+                                                      log.action,
+                                                    ),
+                                                  ),
+                                            ),
+                                            const SizedBox(height: 4),
+                                            Text(
+                                              _formatDateTime(log.timestamp),
+                                              style: theme.textTheme.bodySmall
+                                                  ?.copyWith(
+                                                    color: theme
+                                                        .colorScheme
+                                                        .onSurface
+                                                        .withValues(alpha: 0.7),
+                                                  ),
+                                            ),
+                                            if (log.details != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 6,
+                                                ),
+                                                child: Text(
+                                                  log.details!,
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodyMedium
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withValues(
+                                                              alpha: 0.7,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                            if (log.latitude != null &&
+                                                log.longitude != null)
+                                              Padding(
+                                                padding: const EdgeInsets.only(
+                                                  top: 6,
+                                                ),
+                                                child: Text(
+                                                  'Position: ${log.latitude!.toStringAsFixed(5)}, ${log.longitude!.toStringAsFixed(5)}',
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withValues(
+                                                              alpha: 0.6,
+                                                            ),
+                                                      ),
+                                                ),
+                                              ),
+                                            if (session != null) ...[
+                                              const SizedBox(height: 8),
+                                              Text(
+                                                'Session du ${_formatDateTime(session.startTime)}',
+                                                style: theme.textTheme.bodySmall
+                                                    ?.copyWith(
+                                                      color: theme
+                                                          .colorScheme
+                                                          .onSurface
+                                                          .withValues(
+                                                            alpha: 0.6,
+                                                          ),
+                                                    ),
+                                              ),
+                                              if (session.endTime != null)
+                                                Text(
+                                                  'Durée: ${_formatDuration(session.currentDuration)}',
+                                                  style: theme
+                                                      .textTheme
+                                                      .bodySmall
+                                                      ?.copyWith(
+                                                        color: theme
+                                                            .colorScheme
+                                                            .onSurface
+                                                            .withValues(
+                                                              alpha: 0.6,
+                                                            ),
+                                                      ),
+                                                ),
+                                            ],
+                                          ],
+                                        ),
+                                      ),
+                                      const Icon(Icons.chevron_right_rounded),
+                                    ],
+                                  ),
+                                );
+                              },
+                            ),
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
       ),
     );
   }
-
 }
