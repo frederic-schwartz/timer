@@ -148,16 +148,20 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Développé avec ❤️ en Flutter',
+                      'Développé par Frédéric Schwartz',
                       style: theme.textTheme.bodyMedium?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.75,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Copyright © 2025 ONLINE404.com',
                       style: theme.textTheme.bodySmall?.copyWith(
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.6,
+                        ),
                       ),
                     ),
                   ],
@@ -188,11 +192,7 @@ class _FeatureItem extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Icon(
-            icon,
-            color: Theme.of(context).colorScheme.primary,
-            size: 20,
-          ),
+          Icon(icon, color: Theme.of(context).colorScheme.primary, size: 20),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -200,15 +200,15 @@ class _FeatureItem extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w500,
-                  ),
+                  style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
                 Text(
                   description,
                   style: TextStyle(
                     fontSize: 12,
-                    color: Theme.of(context).colorScheme.onSurface.withValues(alpha: 0.6),
+                    color: Theme.of(
+                      context,
+                    ).colorScheme.onSurface.withValues(alpha: 0.6),
                   ),
                 ),
               ],
