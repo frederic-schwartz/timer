@@ -211,29 +211,33 @@ class _HomeScreenState extends State<HomeScreen> {
             ),
           ),
           const SizedBox(height: 12),
-          Text(
-            'Pause cumulée',
-            style: theme.textTheme.bodyMedium?.copyWith(
-              color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            pauseLabel,
-            style: theme.textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w600,
-            ),
-          ),
-          if (state == TimerState.paused) ...[
-            const SizedBox(height: 12),
-            Text(
-              'Pause en cours: ${_formatDuration(_controller.currentPauseDuration)}',
-              style: theme.textTheme.bodyMedium?.copyWith(
-                color: theme.colorScheme.secondary,
-                fontWeight: FontWeight.w600,
+          Row(
+            children: [
+              Text(
+                'Pause',
+                style: theme.textTheme.bodyMedium?.copyWith(
+                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                ),
               ),
-            ),
-          ],
+              const SizedBox(width: 8),
+              Text(
+                pauseLabel,
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              if (state == TimerState.paused) ...[
+                const SizedBox(width: 8),
+                Text(
+                  '(+${_formatDuration(_controller.currentPauseDuration)})',
+                  style: theme.textTheme.titleMedium?.copyWith(
+                    color: theme.colorScheme.secondary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ],
+          ),
         ],
       ),
     );
