@@ -21,6 +21,5 @@ abstract class TimerRepository {
   Future<void> pauseTimer();
   Future<void> stopTimer();
   Future<void> resumeSession(TimerSession session);
-  Future<void> startNewSession();
   void dispose();
 }

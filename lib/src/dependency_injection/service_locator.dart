@@ -1,4 +1,3 @@
-import '../core/location/location_service.dart';
 import '../data/datasources/session_local_data_source.dart';
 import '../data/datasources/settings_local_data_source.dart';
 import '../data/datasources/timer_local_data_source.dart';
@@ -21,11 +20,8 @@ import '../domain/usecases/initialize_timer.dart';
 import '../domain/usecases/pause_timer.dart';
 import '../domain/usecases/resume_session.dart';
 import '../domain/usecases/set_recent_sessions_count.dart';
-import '../domain/usecases/start_new_session.dart';
 import '../domain/usecases/start_timer.dart';
 import '../domain/usecases/stop_timer.dart';
-import '../domain/usecases/update_session_log.dart';
-import '../domain/usecases/update_session_times.dart';
 import '../domain/usecases/watch_timer_duration.dart';
 import '../domain/usecases/watch_timer_state.dart';
 
@@ -37,7 +33,6 @@ class AppDependencies {
   static final AppDependencies instance = AppDependencies._();
 
   late final SessionLocalDataSource _sessionLocalDataSource;
-  late final LocationService _locationService;
   late final TimerLocalDataSource _timerLocalDataSource;
   late final SettingsLocalDataSource _settingsLocalDataSource;
 
@@ -50,7 +45,6 @@ class AppDependencies {
   late final PauseTimer pauseTimer;
   late final StopTimer stopTimer;
   late final ResumeSession resumeSession;
-  late final StartNewSession startNewSession;
   late final WatchTimerDuration watchTimerDuration;
   late final WatchTimerState watchTimerState;
   late final GetTimerSnapshot getTimerSnapshot;
@@ -62,8 +56,6 @@ class AppDependencies {
   late final DeleteSessionLogs deleteSessionLogs;
   late final DeleteAllLogs deleteAllLogs;
   late final ClearCompletedSessions clearCompletedSessions;
-  late final UpdateSessionTimes updateSessionTimes;
-  late final UpdateSessionLog updateSessionLog;
 
   late final GetRecentSessionsCount getRecentSessionsCount;
   late final SetRecentSessionsCount setRecentSessionsCount;
@@ -71,11 +63,7 @@ class AppDependencies {
   void _configure() {
     _sessionLocalDataSource = SessionLocalDataSource();
     _settingsLocalDataSource = SettingsLocalDataSource();
-    _locationService = LocationService();
-    _timerLocalDataSource = TimerLocalDataSource(
-      _sessionLocalDataSource,
-      _locationService,
-    );
+    _timerLocalDataSource = TimerLocalDataSource(_sessionLocalDataSource);
 
     sessionRepository = SessionRepositoryImpl(_sessionLocalDataSource);
     timerRepository = TimerRepositoryImpl(_timerLocalDataSource);
@@ -86,7 +74,6 @@ class AppDependencies {
     pauseTimer = PauseTimer(timerRepository);
     stopTimer = StopTimer(timerRepository);
     resumeSession = ResumeSession(timerRepository);
-    startNewSession = StartNewSession(timerRepository);
     watchTimerDuration = WatchTimerDuration(timerRepository);
     watchTimerState = WatchTimerState(timerRepository);
     getTimerSnapshot = GetTimerSnapshot(timerRepository);
@@ -98,8 +85,6 @@ class AppDependencies {
     deleteSessionLogs = DeleteSessionLogs(sessionRepository);
     deleteAllLogs = DeleteAllLogs(sessionRepository);
     clearCompletedSessions = ClearCompletedSessions(sessionRepository);
-    updateSessionTimes = UpdateSessionTimes(sessionRepository);
-    updateSessionLog = UpdateSessionLog(sessionRepository);
 
     getRecentSessionsCount = GetRecentSessionsCount(settingsRepository);
     setRecentSessionsCount = SetRecentSessionsCount(settingsRepository);

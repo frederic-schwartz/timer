@@ -4,8 +4,6 @@ class SessionLog {
   final DateTime timestamp;
   final SessionAction action;
   final String? details;
-  final double? latitude;
-  final double? longitude;
 
   const SessionLog({
     this.id,
@@ -13,8 +11,6 @@ class SessionLog {
     required this.timestamp,
     required this.action,
     this.details,
-    this.latitude,
-    this.longitude,
   });
 
   SessionLog copyWith({
@@ -23,8 +19,6 @@ class SessionLog {
     DateTime? timestamp,
     SessionAction? action,
     String? details,
-    double? latitude,
-    double? longitude,
   }) {
     return SessionLog(
       id: id ?? this.id,
@@ -32,14 +26,12 @@ class SessionLog {
       timestamp: timestamp ?? this.timestamp,
       action: action ?? this.action,
       details: details ?? this.details,
-      latitude: latitude ?? this.latitude,
-      longitude: longitude ?? this.longitude,
     );
   }
 
   @override
   String toString() {
-    return 'SessionLog(id: $id, sessionId: $sessionId, timestamp: $timestamp, action: ${action.displayName}, details: $details, latitude: $latitude, longitude: $longitude)';
+    return 'SessionLog(id: $id, sessionId: $sessionId, timestamp: $timestamp, action: ${action.displayName}, details: $details)';
   }
 }
 

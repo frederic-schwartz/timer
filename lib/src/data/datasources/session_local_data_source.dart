@@ -24,7 +24,7 @@ class SessionLocalDataSource {
 
     return openDatabase(
       path,
-      version: 3,
+      version: 2,
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -49,8 +49,6 @@ class SessionLocalDataSource {
         timestamp INTEGER NOT NULL,
         action TEXT NOT NULL,
         details TEXT,
-        latitude REAL,
-        longitude REAL,
         FOREIGN KEY (sessionId) REFERENCES $_tableName (id) ON DELETE CASCADE
       )
     ''');
@@ -65,15 +63,9 @@ class SessionLocalDataSource {
           timestamp INTEGER NOT NULL,
           action TEXT NOT NULL,
           details TEXT,
-          latitude REAL,
-          longitude REAL,
           FOREIGN KEY (sessionId) REFERENCES $_tableName (id) ON DELETE CASCADE
         )
       ''');
-    }
-    if (oldVersion < 3) {
-      await db.execute('ALTER TABLE $_logsTableName ADD COLUMN latitude REAL');
-      await db.execute('ALTER TABLE $_logsTableName ADD COLUMN longitude REAL');
     }
   }
 
@@ -170,18 +162,5 @@ class SessionLocalDataSource {
   Future<void> deleteAllLogs() async {
     final db = await _db;
     await db.delete(_logsTableName);
-  }
-
-  Future<void> updateSessionLog(SessionLogModel log) async {
-    if (log.id == null) {
-      throw ArgumentError('Cannot update log without id');
-    }
-    final db = await _db;
-    await db.update(
-      _logsTableName,
-      log.toMap(),
-      where: 'id = ?',
-      whereArgs: [log.id],
-    );
   }
 }

@@ -7,8 +7,6 @@ class SessionLogModel extends SessionLog {
     required super.timestamp,
     required super.action,
     super.details,
-    super.latitude,
-    super.longitude,
   });
 
   factory SessionLogModel.fromEntity(SessionLog log) {
@@ -18,8 +16,6 @@ class SessionLogModel extends SessionLog {
       timestamp: log.timestamp,
       action: log.action,
       details: log.details,
-      latitude: log.latitude,
-      longitude: log.longitude,
     );
   }
 
@@ -36,8 +32,6 @@ class SessionLogModel extends SessionLog {
       timestamp: DateTime.fromMillisecondsSinceEpoch(map['timestamp'] as int),
       action: action,
       details: map['details'] as String?,
-      latitude: (map['latitude'] as num?)?.toDouble(),
-      longitude: (map['longitude'] as num?)?.toDouble(),
     );
   }
 
@@ -48,8 +42,6 @@ class SessionLogModel extends SessionLog {
       'timestamp': timestamp.millisecondsSinceEpoch,
       'action': action.name,
       'details': details,
-      'latitude': latitude,
-      'longitude': longitude,
     };
   }
 }

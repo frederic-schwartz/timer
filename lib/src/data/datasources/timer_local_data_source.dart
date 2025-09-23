@@ -3,7 +3,6 @@ import 'dart:core';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../core/location/location_service.dart';
 import '../../domain/entities/session_log.dart';
 import '../../domain/entities/timer_state.dart';
 import '../models/session_log_model.dart';
@@ -11,16 +10,12 @@ import '../models/timer_session_model.dart';
 import 'session_local_data_source.dart';
 
 class TimerLocalDataSource {
-  TimerLocalDataSource(
-    this._sessionLocalDataSource,
-    this._locationService,
-  );
+  TimerLocalDataSource(this._sessionLocalDataSource);
 
   static const String _pauseStartTimeKey = 'pause_start_time';
   static const String _totalPausedDurationKey = 'total_paused_duration';
 
   final SessionLocalDataSource _sessionLocalDataSource;
-  final LocationService _locationService;
 
   TimerSessionModel? _currentSession;
   Timer? _timer;
@@ -241,43 +236,18 @@ class TimerLocalDataSource {
       _currentSession!.copyWithModel(isRunning: false, isPaused: false),
     );
 
+    await _logAction(SessionAction.resumeSession, details: 'Préparation de la reprise');
+
     _stateController.add(TimerState.ready);
     _durationController.add(_frozenDuration ?? Duration.zero);
   }
 
-  Future<void> startNewSession() async {
-    if (_currentSession != null) {
-      _currentSession = null;
-      _frozenDuration = null;
-      _pauseStartTime = null;
-      _totalPausedDuration = 0;
-      await _clearPauseState();
-      _stateController.add(TimerState.stopped);
-      _durationController.add(Duration.zero);
-    }
-    await startTimer();
-  }
-
   Future<void> _logAction(SessionAction action, {String? details}) async {
-    double? latitude;
-    double? longitude;
-    try {
-      final position = await _locationService.getCurrentPosition();
-      if (position != null) {
-        latitude = position.latitude;
-        longitude = position.longitude;
-      }
-    } catch (_) {
-      // Silent failure if location not available
-    }
-
     final log = SessionLogModel(
       sessionId: _currentSession?.id,
       timestamp: DateTime.now(),
       action: action,
       details: details,
-      latitude: latitude,
-      longitude: longitude,
     );
     await _sessionLocalDataSource.insertSessionLog(log);
   }

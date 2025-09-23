@@ -14,10 +14,6 @@ dependencies:
   sqflite: ^2.3.0
   path: ^1.8.3
   shared_preferences: ^2.2.2
-  geolocator: ^10.1.0
-  flutter_map: ^6.1.0
-  latlong2: ^0.9.1
-  apple_maps_flutter: ^1.4.0
   package_info_plus: ^8.0.0
 
 dev_dependencies:
