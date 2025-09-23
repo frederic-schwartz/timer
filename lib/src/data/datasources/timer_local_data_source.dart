@@ -112,7 +112,7 @@ class TimerLocalDataSource {
   void _startTimer() {
     _timer?.cancel();
     _timer = Timer.periodic(const Duration(milliseconds: 100), (_) {
-      if (_currentSession != null && _currentSession!.isRunning) {
+      if (_currentSession != null && (_currentSession!.isRunning || _currentSession!.isPaused)) {
         _durationController.add(currentDuration);
       }
     });

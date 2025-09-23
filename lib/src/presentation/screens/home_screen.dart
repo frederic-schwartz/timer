@@ -164,9 +164,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Widget _buildTimerHero(BuildContext context, TimerState state) {
     final theme = Theme.of(context);
     final accent = _stateColor(state, theme);
-    final pauseLabel = _controller.totalPauseRealTime.inSeconds > 0
-        ? _formatDuration(_controller.totalPauseRealTime)
-        : '—';
+    final pauseLabel = _formatDuration(_controller.totalPauseRealTime);
 
     return Container(
       width: double.infinity,
@@ -213,26 +211,57 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(height: 12),
           Row(
             children: [
-              Text(
-                'Pause',
-                style: theme.textTheme.bodyMedium?.copyWith(
-                  color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+              Container(
+                width: 145,
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  borderRadius: BorderRadius.circular(20),
+                  border: Border.all(
+                    color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                    width: 1,
+                  ),
+                ),
+                child: Row(
+                  children: [
+                    Text(
+                      'Pause',
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Text(
+                      pauseLabel,
+                      style: theme.textTheme.titleMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                        fontFeatures: const [FontFeature.tabularFigures()],
+                      ),
+                    ),
+                  ],
                 ),
               ),
-              const SizedBox(width: 8),
-              Text(
-                pauseLabel,
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-              if (state == TimerState.paused) ...[
+              if (state == TimerState.paused && _controller.totalPauseRealTime > _controller.currentPauseDuration) ...[
                 const SizedBox(width: 8),
-                Text(
-                  '(+${_formatDuration(_controller.currentPauseDuration)})',
-                  style: theme.textTheme.titleMedium?.copyWith(
-                    color: theme.colorScheme.secondary,
-                    fontWeight: FontWeight.w600,
+                Container(
+                  width: 100,
+                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.secondary.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: theme.colorScheme.secondary.withValues(alpha: 0.3),
+                      width: 1,
+                    ),
+                  ),
+                  child: Text(
+                    '+${_formatDuration(_controller.currentPauseDuration)}',
+                    textAlign: TextAlign.center,
+                    style: theme.textTheme.titleMedium?.copyWith(
+                      color: theme.colorScheme.secondary,
+                      fontWeight: FontWeight.w600,
+                      fontFeatures: const [FontFeature.tabularFigures()],
+                    ),
                   ),
                 ),
               ],
