@@ -176,9 +176,12 @@ class TimerLocalDataSource {
   Future<void> stopTimer() async {
     if (_currentSession != null) {
       DateTime endTime;
+      DateTime? newStartTime;
 
       if (!_currentSession!.isRunning && _frozenDuration != null) {
-        endTime = _currentSession!.startTime.add(_frozenDuration!);
+        // Session was resumed - update startTime to make it appear at top of list
+        endTime = DateTime.now();
+        newStartTime = endTime.subtract(_frozenDuration!);
       } else {
         endTime = DateTime.now();
         if (_currentSession!.isPaused && _pauseStartTime != null) {
@@ -191,6 +194,7 @@ class TimerLocalDataSource {
       final updatedSession = _currentSession!.copyWithModel(
         isRunning: false,
         isPaused: false,
+        startTime: newStartTime ?? _currentSession!.startTime,
         endTime: endTime,
         totalPausedDuration: _totalPausedDuration,
       );
