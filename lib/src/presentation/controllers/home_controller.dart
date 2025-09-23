@@ -60,6 +60,9 @@ class HomeController extends ChangeNotifier {
     await loadRecentSessions();
     await loadCategories();
 
+    // Récupérer catégorie et libellé de la session courante si elle existe
+    await _loadCurrentSessionData();
+
     _isLoading = false;
     notifyListeners();
   }
@@ -98,7 +101,11 @@ class HomeController extends ChangeNotifier {
 
   Future<void> resumeSession(TimerSession session) async {
     await _dependencies.resumeSession(session);
+    // Récupérer la catégorie et le libellé de la session reprise
+    _selectedCategory = session.category;
+    _selectedLabel = session.label;
     _updateSnapshot();
+    notifyListeners();
   }
 
   Future<void> resetTimer() async {
@@ -120,7 +127,36 @@ class HomeController extends ChangeNotifier {
   void updateCategoryAndLabel(entities.Category? category, String? label) {
     _selectedCategory = category;
     _selectedLabel = label;
+
+    // Si il y a une session courante, mettre à jour ses données
+    _updateCurrentSessionCategoryLabel();
+
     notifyListeners();
+  }
+
+  Future<void> _updateCurrentSessionCategoryLabel() async {
+    try {
+      await _dependencies.timerRepository.updateCurrentSessionCategoryLabel(
+        _selectedCategory,
+        _selectedLabel,
+      );
+      // Recharger la liste des sessions pour refléter les changements
+      await loadRecentSessions();
+    } catch (_) {
+      // Ignorer les erreurs
+    }
+  }
+
+  Future<void> _loadCurrentSessionData() async {
+    try {
+      final currentSession = _dependencies.timerRepository.currentSession;
+      if (currentSession != null) {
+        _selectedCategory = currentSession.category;
+        _selectedLabel = currentSession.label;
+      }
+    } catch (_) {
+      // Ignorer les erreurs
+    }
   }
 
   void _updateSnapshot({bool notify = false}) {

@@ -66,6 +66,16 @@ class TimerRepositoryImpl implements TimerRepository {
   }
 
   @override
+  TimerSession? get currentSession {
+    final sessionModel = _timerLocalDataSource.currentSession;
+    return sessionModel;
+  }
+
+  @override
+  Future<void> updateCurrentSessionCategoryLabel(Category? category, String? label) =>
+      _timerLocalDataSource.updateCurrentSessionCategoryLabel(category, label);
+
+  @override
   void dispose() {
     _timerLocalDataSource.dispose();
   }

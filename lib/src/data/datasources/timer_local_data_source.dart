@@ -160,11 +160,18 @@ class TimerLocalDataSource {
         _currentSession = _currentSession!.copyWithModel(
           isRunning: true,
           startTime: DateTime.now().subtract(totalElapsedTime),
+          // Garder la catégorie et libellé actuels (possiblement modifiés)
+          category: category ?? _currentSession!.category,
+          label: label ?? _currentSession!.label,
         );
         _frozenDuration = null;
         _isResumedSession = false; // Plus une session reprise une fois démarrée
       } else {
-        _currentSession = _currentSession!.copyWithModel(isRunning: true);
+        _currentSession = _currentSession!.copyWithModel(
+          isRunning: true,
+          category: category ?? _currentSession!.category,
+          label: label ?? _currentSession!.label,
+        );
         _isResumedSession = false;
       }
       await _sessionLocalDataSource.updateSession(_currentSession!);
@@ -271,6 +278,26 @@ class TimerLocalDataSource {
 
     _stateController.add(TimerState.stopped);
     _durationController.add(Duration.zero);
+  }
+
+  Future<void> updateCurrentSessionCategoryLabel(Category? category, String? label) async {
+    if (_currentSession != null && _currentSession!.id != null) {
+      // Mettre à jour la session en mémoire
+      _currentSession = _currentSession!.copyWithModel(
+        category: category,
+        label: label,
+      );
+
+      // Pour une session reprise, il faut remettre endTime pour la sauvegarder correctement
+      TimerSessionModel sessionToSave = _currentSession!;
+      if (_isResumedSession && _frozenDuration != null) {
+        // Recalculer endTime basé sur la durée figée
+        final endTime = _currentSession!.startTime.add(_frozenDuration! + Duration(milliseconds: _currentSession!.totalPausedDuration));
+        sessionToSave = _currentSession!.copyWithModel(endTime: endTime);
+      }
+
+      await _sessionLocalDataSource.updateSession(sessionToSave);
+    }
   }
 
 

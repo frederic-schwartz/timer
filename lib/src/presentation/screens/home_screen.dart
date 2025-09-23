@@ -259,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ],
           ),
-          const SizedBox(height: 24),
+          const SizedBox(height: 16),
           Align(
             alignment: Alignment.center,
             child: Text(
@@ -273,7 +273,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 8),
           Row(
             children: [
               Container(
@@ -332,8 +332,74 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ],
           ),
+          if (_controller.selectedCategory != null || (_controller.selectedLabel != null && _controller.selectedLabel!.isNotEmpty)) ...[
+            const SizedBox(height: 16),
+            _buildCategoryLabelInfo(context, theme),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildCategoryLabelInfo(BuildContext context, ThemeData theme) {
+    return Row(
+      children: [
+        if (_controller.selectedCategory != null) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: Color(int.parse(_controller.selectedCategory!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.15),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: Color(int.parse(_controller.selectedCategory!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: 8,
+                  height: 8,
+                  decoration: BoxDecoration(
+                    color: Color(int.parse(_controller.selectedCategory!.color.substring(1), radix: 16) + 0xFF000000),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _controller.selectedCategory!.name,
+                  style: theme.textTheme.bodySmall?.copyWith(
+                    fontWeight: FontWeight.w500,
+                    color: Color(int.parse(_controller.selectedCategory!.color.substring(1), radix: 16) + 0xFF000000),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (_controller.selectedLabel != null && _controller.selectedLabel!.isNotEmpty) const SizedBox(width: 8),
+        ],
+        if (_controller.selectedLabel != null && _controller.selectedLabel!.isNotEmpty) ...[
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                width: 1,
+              ),
+            ),
+            child: Text(
+              _controller.selectedLabel!,
+              style: theme.textTheme.bodySmall?.copyWith(
+                fontWeight: FontWeight.w500,
+                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+              ),
+            ),
+          ),
+        ],
+      ],
     );
   }
 
@@ -644,6 +710,71 @@ class _RecentSessionCard extends StatelessWidget {
                                   fontWeight: FontWeight.w600,
                                 ),
                               ),
+                            ],
+                          ),
+                        ),
+                      if (session.category != null || (session.label != null && session.label!.isNotEmpty))
+                        Padding(
+                          padding: const EdgeInsets.only(top: 8),
+                          child: Row(
+                            children: [
+                              if (session.category != null) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.3),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Container(
+                                        width: 6,
+                                        height: 6,
+                                        decoration: BoxDecoration(
+                                          color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000),
+                                          shape: BoxShape.circle,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        session.category!.name,
+                                        style: theme.textTheme.bodySmall?.copyWith(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w500,
+                                          color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                                if (session.label != null && session.label!.isNotEmpty) const SizedBox(width: 6),
+                              ],
+                              if (session.label != null && session.label!.isNotEmpty) ...[
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(
+                                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                                      width: 1,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    session.label!,
+                                    style: theme.textTheme.bodySmall?.copyWith(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w500,
+                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                                    ),
+                                  ),
+                                ),
+                              ],
                             ],
                           ),
                         ),
