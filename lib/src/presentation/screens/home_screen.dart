@@ -16,17 +16,35 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   late final HomeController _controller;
+  late final ScrollController _scrollController;
+  TimerState? _previousState;
 
   @override
   void initState() {
     super.initState();
     _controller = HomeController();
+    _scrollController = ScrollController();
     _controller.addListener(_onControllerChanged);
     _controller.initialize();
   }
 
   void _onControllerChanged() {
     if (mounted) {
+      final currentState = _controller.currentState;
+
+      // Si le timer vient d'être stoppé (transition vers stopped), remonter la liste au début
+      if (_previousState != null &&
+          _previousState != TimerState.stopped &&
+          currentState == TimerState.stopped &&
+          _scrollController.hasClients) {
+        _scrollController.animateTo(
+          0,
+          duration: const Duration(milliseconds: 300),
+          curve: Curves.easeOut,
+        );
+      }
+
+      _previousState = currentState;
       setState(() {});
     }
   }
@@ -35,6 +53,7 @@ class _HomeScreenState extends State<HomeScreen> {
   void dispose() {
     _controller.removeListener(_onControllerChanged);
     _controller.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -48,6 +67,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _stopTimer() async {
     await _controller.stopTimer();
+  }
+
+  Future<void> _resetTimer() async {
+    await _controller.resetTimer();
   }
 
   Color _stateColor(TimerState state, ThemeData theme) {
@@ -301,15 +324,24 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(width: 16),
         Expanded(
           child: FilledButton.icon(
-            onPressed: state != TimerState.stopped && state != TimerState.ready ? _stopTimer : null,
-            icon: const Icon(Icons.stop_rounded, size: 26),
-            label: const Text('Stop'),
+            onPressed: state == TimerState.ready
+                ? _resetTimer
+                : (state != TimerState.stopped ? _stopTimer : null),
+            icon: Icon(
+              state == TimerState.ready ? Icons.refresh_rounded : Icons.stop_rounded,
+              size: 26
+            ),
+            label: Text(state == TimerState.ready ? 'Reset' : 'Stop'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              backgroundColor: theme.colorScheme.errorContainer,
-              foregroundColor: theme.colorScheme.onErrorContainer,
+              backgroundColor: state == TimerState.ready
+                  ? theme.colorScheme.surfaceContainerHighest
+                  : theme.colorScheme.errorContainer,
+              foregroundColor: state == TimerState.ready
+                  ? theme.colorScheme.onSurface
+                  : theme.colorScheme.onErrorContainer,
               disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
               disabledForegroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
@@ -345,6 +377,7 @@ class _HomeScreenState extends State<HomeScreen> {
     return ScrollConfiguration(
       behavior: const ScrollBehavior().copyWith(overscroll: false, physics: const BouncingScrollPhysics()),
       child: ListView.builder(
+        controller: _scrollController,
         padding: const EdgeInsets.fromLTRB(16, 8, 16, 24),
         itemCount: sessions.length,
         itemBuilder: (context, index) {

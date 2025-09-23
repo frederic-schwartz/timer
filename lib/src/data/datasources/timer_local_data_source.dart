@@ -238,6 +238,21 @@ class TimerLocalDataSource {
     _durationController.add(_frozenDuration ?? Duration.zero);
   }
 
+  Future<void> reset() async {
+    _timer?.cancel();
+    _timer = null;
+
+    _currentSession = null;
+    _totalPausedDuration = 0;
+    _frozenDuration = null;
+    _pauseStartTime = null;
+
+    await _clearPauseState();
+
+    _stateController.add(TimerState.stopped);
+    _durationController.add(Duration.zero);
+  }
+
 
   Future<void> _clearPauseState() async {
     final prefs = await SharedPreferences.getInstance();

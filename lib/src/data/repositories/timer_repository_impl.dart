@@ -44,6 +44,9 @@ class TimerRepositoryImpl implements TimerRepository {
   Future<void> stopTimer() => _timerLocalDataSource.stopTimer();
 
   @override
+  Future<void> reset() => _timerLocalDataSource.reset();
+
+  @override
   Future<void> resumeSession(TimerSession session) {
     final model = TimerSessionModel.fromEntity(session);
     return _timerLocalDataSource.resumeSession(model);
