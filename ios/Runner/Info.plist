@@ -2,10 +2,6 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>Tockee utilise ta localisation pour associer tes sessions à un lieu et améliorer les statistiques. Cette donnée est facultative.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>Tockee a besoin d’un accès à la localisation même en arrière-plan pour enregistrer précisément tes sessions lorsque l’app n’est pas ouverte. Tu peux désactiver ceci à tout moment.</string>
 	<key>CADisableMinimumFrameDurationOnPhone</key>
 	<true/>
 	<key>CFBundleDevelopmentRegion</key>
