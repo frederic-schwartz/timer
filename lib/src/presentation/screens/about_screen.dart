@@ -148,7 +148,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'Développé avec ❤️ en Flutter',
+                      'Frédéric Schwartz',
                       style: theme.textTheme.bodyMedium?.copyWith(
                         color: theme.colorScheme.onSurface.withValues(alpha: 0.75),
                       ),
