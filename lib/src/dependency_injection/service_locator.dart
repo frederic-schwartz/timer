@@ -8,13 +8,9 @@ import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/settings_repository.dart';
 import '../domain/repositories/timer_repository.dart';
 import '../domain/usecases/clear_completed_sessions.dart';
-import '../domain/usecases/delete_all_logs.dart';
 import '../domain/usecases/delete_session.dart';
-import '../domain/usecases/delete_session_logs.dart';
-import '../domain/usecases/get_all_logs.dart';
 import '../domain/usecases/get_all_sessions.dart';
 import '../domain/usecases/get_recent_sessions_count.dart';
-import '../domain/usecases/get_session_logs.dart';
 import '../domain/usecases/get_timer_snapshot.dart';
 import '../domain/usecases/initialize_timer.dart';
 import '../domain/usecases/pause_timer.dart';
@@ -51,10 +47,6 @@ class AppDependencies {
 
   late final GetAllSessions getAllSessions;
   late final DeleteSession deleteSession;
-  late final GetSessionLogs getSessionLogs;
-  late final GetAllLogs getAllLogs;
-  late final DeleteSessionLogs deleteSessionLogs;
-  late final DeleteAllLogs deleteAllLogs;
   late final ClearCompletedSessions clearCompletedSessions;
 
   late final GetRecentSessionsCount getRecentSessionsCount;
@@ -80,10 +72,6 @@ class AppDependencies {
 
     getAllSessions = GetAllSessions(sessionRepository);
     deleteSession = DeleteSession(sessionRepository);
-    getSessionLogs = GetSessionLogs(sessionRepository);
-    getAllLogs = GetAllLogs(sessionRepository);
-    deleteSessionLogs = DeleteSessionLogs(sessionRepository);
-    deleteAllLogs = DeleteAllLogs(sessionRepository);
     clearCompletedSessions = ClearCompletedSessions(sessionRepository);
 
     getRecentSessionsCount = GetRecentSessionsCount(settingsRepository);

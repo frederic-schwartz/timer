@@ -3,9 +3,7 @@ import 'dart:core';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
-import '../../domain/entities/session_log.dart';
 import '../../domain/entities/timer_state.dart';
-import '../models/session_log_model.dart';
 import '../models/timer_session_model.dart';
 import 'session_local_data_source.dart';
 
@@ -127,8 +125,6 @@ class TimerLocalDataSource {
       _currentSession = session.copyWithModel(id: id);
       _totalPausedDuration = 0;
 
-      await _logAction(SessionAction.start, details: 'Nouvelle session démarrée');
-
       _durationController.add(Duration.zero);
     } else if (_currentSession!.isPaused) {
       if (_pauseStartTime != null) {
@@ -142,7 +138,6 @@ class TimerLocalDataSource {
         _currentSession!.copyWithModel(totalPausedDuration: _totalPausedDuration),
       );
 
-      await _logAction(SessionAction.resume, details: 'Reprise après pause');
     } else if (!_currentSession!.isRunning) {
       if (_frozenDuration != null) {
         final totalElapsedTime = _frozenDuration! + Duration(milliseconds: _totalPausedDuration);
@@ -173,7 +168,6 @@ class TimerLocalDataSource {
       );
       await _savePauseState();
 
-      await _logAction(SessionAction.pause, details: 'Mise en pause');
 
       _stateController.add(TimerState.paused);
     }
@@ -203,7 +197,6 @@ class TimerLocalDataSource {
 
       await _sessionLocalDataSource.updateSession(updatedSession);
 
-      await _logAction(SessionAction.stop, details: 'Session arrêtée');
 
       _stateController.add(TimerState.stopped);
       _durationController.add(updatedSession.currentDuration);
@@ -236,21 +229,11 @@ class TimerLocalDataSource {
       _currentSession!.copyWithModel(isRunning: false, isPaused: false),
     );
 
-    await _logAction(SessionAction.resumeSession, details: 'Préparation de la reprise');
 
     _stateController.add(TimerState.ready);
     _durationController.add(_frozenDuration ?? Duration.zero);
   }
 
-  Future<void> _logAction(SessionAction action, {String? details}) async {
-    final log = SessionLogModel(
-      sessionId: _currentSession?.id,
-      timestamp: DateTime.now(),
-      action: action,
-      details: details,
-    );
-    await _sessionLocalDataSource.insertSessionLog(log);
-  }
 
   Future<void> _clearPauseState() async {
     final prefs = await SharedPreferences.getInstance();

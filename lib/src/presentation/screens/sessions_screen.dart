@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/timer_session.dart';
 import '../controllers/sessions_controller.dart';
 import '../widgets/glass_card.dart';
-import 'session_logs_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -239,16 +238,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                                 ),
                                               ),
                                               PopupMenuItem(
-                                                value: 'logs',
-                                                child: const Row(
-                                                  children: [
-                                                    Icon(Icons.list_alt),
-                                                    SizedBox(width: 8),
-                                                    Text('Voir les logs'),
-                                                  ],
-                                                ),
-                                              ),
-                                              PopupMenuItem(
                                                 value: 'delete',
                                                 child: const Row(
                                                   children: [
@@ -262,13 +251,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                             onSelected: (value) {
                                               if (value == 'resume') {
                                                 _resumeSession(session);
-                                              } else if (value == 'logs') {
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) => SessionLogsScreen(session: session),
-                                                  ),
-                                                );
                                               } else if (value == 'delete') {
                                                 _deleteSession(session);
                                               }

@@ -4,8 +4,6 @@ import '../../domain/entities/timer_session.dart';
 import '../../domain/entities/timer_state.dart';
 import '../controllers/home_controller.dart';
 import 'about_screen.dart';
-import 'all_logs_screen.dart';
-import 'session_logs_screen.dart';
 import 'sessions_screen.dart';
 import 'settings_screen.dart';
 
@@ -129,19 +127,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
               await _controller.loadRecentSessions();
-            },
-          ),
-          ListTile(
-            leading: const Icon(Icons.list_alt),
-            title: const Text('Logs'),
-            onTap: () {
-              Navigator.pop(context);
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const AllLogsScreen(),
-                ),
-              );
             },
           ),
           ListTile(
@@ -336,14 +321,6 @@ class _HomeScreenState extends State<HomeScreen> {
             child: _RecentSessionCard(
               session: session,
               onResume: () => _controller.resumeSession(session),
-              onShowLogs: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => SessionLogsScreen(session: session),
-                  ),
-                );
-              },
               durationLabel: _formatDuration(session.currentDuration),
               startLabel: _formatDateTime(session.startTime),
               pauseLabel: session.totalPausedDuration > 0
@@ -463,7 +440,6 @@ class _RecentSessionCard extends StatelessWidget {
   const _RecentSessionCard({
     required this.session,
     required this.onResume,
-    required this.onShowLogs,
     required this.durationLabel,
     required this.startLabel,
     this.pauseLabel,
@@ -471,7 +447,6 @@ class _RecentSessionCard extends StatelessWidget {
 
   final TimerSession session;
   final VoidCallback onResume;
-  final VoidCallback onShowLogs;
   final String durationLabel;
   final String startLabel;
   final String? pauseLabel;
@@ -564,20 +539,10 @@ class _RecentSessionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Column(
-                  children: [
-                    IconButton(
-                      onPressed: onShowLogs,
-                      icon: const Icon(Icons.list_alt_rounded),
-                      tooltip: 'Voir les logs',
-                    ),
-                    const SizedBox(height: 12),
-                    Icon(
-                      Icons.play_arrow_rounded,
-                      color: theme.colorScheme.primary,
-                      size: 28,
-                    ),
-                  ],
+                Icon(
+                  Icons.play_arrow_rounded,
+                  color: theme.colorScheme.primary,
+                  size: 28,
                 ),
               ],
             ),

@@ -1,14 +1,12 @@
 import 'package:path/path.dart';
 import 'package:sqflite/sqflite.dart';
 
-import '../models/session_log_model.dart';
 import '../models/timer_session_model.dart';
 
 class SessionLocalDataSource {
   SessionLocalDataSource();
 
   static const String _tableName = 'timer_sessions';
-  static const String _logsTableName = 'session_logs';
 
   Database? _database;
 
@@ -24,7 +22,7 @@ class SessionLocalDataSource {
 
     return openDatabase(
       path,
-      version: 2,
+      version: 1,
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -42,31 +40,10 @@ class SessionLocalDataSource {
       )
     ''');
 
-    await db.execute('''
-      CREATE TABLE $_logsTableName (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        sessionId INTEGER,
-        timestamp INTEGER NOT NULL,
-        action TEXT NOT NULL,
-        details TEXT,
-        FOREIGN KEY (sessionId) REFERENCES $_tableName (id) ON DELETE CASCADE
-      )
-    ''');
   }
 
   Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
-    if (oldVersion < 2) {
-      await db.execute('''
-        CREATE TABLE $_logsTableName (
-          id INTEGER PRIMARY KEY AUTOINCREMENT,
-          sessionId INTEGER,
-          timestamp INTEGER NOT NULL,
-          action TEXT NOT NULL,
-          details TEXT,
-          FOREIGN KEY (sessionId) REFERENCES $_tableName (id) ON DELETE CASCADE
-        )
-      ''');
-    }
+    // No upgrades needed for version 1
   }
 
   Future<int> insertSession(TimerSessionModel session) async {
@@ -123,44 +100,4 @@ class SessionLocalDataSource {
     );
   }
 
-  Future<int> insertSessionLog(SessionLogModel log) async {
-    final db = await _db;
-    return db.insert(_logsTableName, log.toMap());
-  }
-
-  Future<List<SessionLogModel>> getSessionLogs(int sessionId) async {
-    final db = await _db;
-    final result = await db.query(
-      _logsTableName,
-      where: 'sessionId = ?',
-      whereArgs: [sessionId],
-      orderBy: 'timestamp ASC',
-    );
-
-    return result.map(SessionLogModel.fromMap).toList();
-  }
-
-  Future<List<SessionLogModel>> getAllLogs() async {
-    final db = await _db;
-    final result = await db.query(
-      _logsTableName,
-      orderBy: 'timestamp DESC',
-    );
-
-    return result.map(SessionLogModel.fromMap).toList();
-  }
-
-  Future<void> deleteSessionLogs(int sessionId) async {
-    final db = await _db;
-    await db.delete(
-      _logsTableName,
-      where: 'sessionId = ?',
-      whereArgs: [sessionId],
-    );
-  }
-
-  Future<void> deleteAllLogs() async {
-    final db = await _db;
-    await db.delete(_logsTableName);
-  }
 }
