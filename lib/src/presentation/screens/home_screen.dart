@@ -8,6 +8,7 @@ import 'about_screen.dart';
 import 'edit_session_screen.dart';
 import 'sessions_screen.dart';
 import 'settings_screen.dart';
+import 'statistics_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -213,6 +214,19 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
               await _controller.loadRecentSessions();
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.bar_chart),
+            title: const Text('Statistiques'),
+            onTap: () async {
+              Navigator.pop(context);
+              await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const StatisticsScreen(),
+                ),
+              );
             },
           ),
           ListTile(
