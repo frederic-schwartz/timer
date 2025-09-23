@@ -3,6 +3,7 @@ import 'dart:core';
 
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../../domain/entities/category.dart';
 import '../../domain/entities/timer_state.dart';
 import '../models/timer_session_model.dart';
 import 'session_local_data_source.dart';
@@ -20,6 +21,7 @@ class TimerLocalDataSource {
   DateTime? _pauseStartTime;
   int _totalPausedDuration = 0;
   Duration? _frozenDuration;
+  bool _isResumedSession = false;
 
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
   final StreamController<TimerState> _stateController = StreamController<TimerState>.broadcast();
@@ -33,6 +35,11 @@ class TimerLocalDataSource {
     if (_currentSession == null) return TimerState.stopped;
     if (_currentSession!.isPaused) return TimerState.paused;
     if (_currentSession!.isRunning) return TimerState.running;
+    // Si c'est une session reprise, c'est ready
+    if (_isResumedSession) return TimerState.ready;
+    // Si la session a un endTime, c'est qu'elle a été stoppée (finished)
+    if (_currentSession!.endTime != null) return TimerState.finished;
+    // Sinon c'est une session prête à être reprise ou continuée (ready)
     return TimerState.ready;
   }
 
@@ -118,12 +125,20 @@ class TimerLocalDataSource {
     });
   }
 
-  Future<void> startTimer() async {
-    if (_currentSession == null) {
-      final session = TimerSessionModel(startTime: DateTime.now());
+  Future<void> startTimer({Category? category, String? label}) async {
+    // Si pas de session ou session terminée ou session reprise, traiter différemment
+    if (_currentSession == null || (_currentSession != null && _currentSession!.endTime != null && !_isResumedSession)) {
+      // Créer une nouvelle session
+      final session = TimerSessionModel(
+        startTime: DateTime.now(),
+        category: category,
+        label: label,
+      );
       final id = await _sessionLocalDataSource.insertSession(session);
       _currentSession = session.copyWithModel(id: id);
       _totalPausedDuration = 0;
+      _frozenDuration = null;
+      _isResumedSession = false;
 
       _durationController.add(Duration.zero);
     } else if (_currentSession!.isPaused) {
@@ -147,8 +162,10 @@ class TimerLocalDataSource {
           startTime: DateTime.now().subtract(totalElapsedTime),
         );
         _frozenDuration = null;
+        _isResumedSession = false; // Plus une session reprise une fois démarrée
       } else {
         _currentSession = _currentSession!.copyWithModel(isRunning: true);
+        _isResumedSession = false;
       }
       await _sessionLocalDataSource.updateSession(_currentSession!);
     }
@@ -201,24 +218,28 @@ class TimerLocalDataSource {
 
       await _sessionLocalDataSource.updateSession(updatedSession);
 
+      // Garder la session en mémoire pour afficher la durée finale
+      _currentSession = updatedSession;
+      _frozenDuration = updatedSession.currentDuration;
+      _isResumedSession = false; // Session stoppée, pas reprise
 
-      _stateController.add(TimerState.stopped);
+      _stateController.add(TimerState.finished);
       _durationController.add(updatedSession.currentDuration);
 
       _timer?.cancel();
       _timer = null;
-
-      _currentSession = null;
-      _totalPausedDuration = 0;
-      _frozenDuration = null;
-      await _clearPauseState();
     }
   }
 
   Future<void> resumeSession(TimerSessionModel session) async {
     if (session.id == null) return;
 
-    _currentSession = session.copyWithModel(isRunning: false, isPaused: false);
+    // Garder la session avec endTime mais marquer comme reprise
+    _currentSession = session.copyWithModel(
+      isRunning: false,
+      isPaused: false,
+    );
+    _isResumedSession = true; // Marquer comme session reprise
 
     if (session.endTime != null) {
       final totalDuration = session.endTime!.difference(session.startTime);
@@ -229,10 +250,8 @@ class TimerLocalDataSource {
 
     _totalPausedDuration = session.totalPausedDuration;
 
-    await _sessionLocalDataSource.updateSession(
-      _currentSession!.copyWithModel(isRunning: false, isPaused: false),
-    );
-
+    // Ne pas modifier endTime dans la base de données pour l'instant
+    // await _sessionLocalDataSource.updateSession(_currentSession!);
 
     _stateController.add(TimerState.ready);
     _durationController.add(_frozenDuration ?? Duration.zero);
@@ -246,6 +265,7 @@ class TimerLocalDataSource {
     _totalPausedDuration = 0;
     _frozenDuration = null;
     _pauseStartTime = null;
+    _isResumedSession = false;
 
     await _clearPauseState();
 

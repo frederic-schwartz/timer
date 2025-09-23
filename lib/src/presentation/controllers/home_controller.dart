@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 
 import '../../dependency_injection/service_locator.dart';
+import '../../domain/entities/category.dart' as entities;
 import '../../domain/entities/timer_session.dart';
 import '../../domain/entities/timer_snapshot.dart';
 import '../../domain/entities/timer_state.dart';
@@ -21,6 +22,9 @@ class HomeController extends ChangeNotifier {
   Duration _currentPauseDuration = Duration.zero;
   TimerState _currentState = TimerState.stopped;
   List<TimerSession> _recentSessions = const [];
+  List<entities.Category> _categories = const [];
+  entities.Category? _selectedCategory;
+  String? _selectedLabel;
 
   StreamSubscription<Duration>? _durationSubscription;
   StreamSubscription<TimerState>? _stateSubscription;
@@ -32,6 +36,9 @@ class HomeController extends ChangeNotifier {
   Duration get currentPauseDuration => _currentPauseDuration;
   TimerState get currentState => _currentState;
   List<TimerSession> get recentSessions => _recentSessions;
+  List<entities.Category> get categories => _categories;
+  entities.Category? get selectedCategory => _selectedCategory;
+  String? get selectedLabel => _selectedLabel;
 
   Future<void> initialize() async {
     if (_isInitialized) return;
@@ -44,13 +51,14 @@ class HomeController extends ChangeNotifier {
     _stateSubscription = _dependencies.watchTimerState().listen((state) async {
       _currentState = state;
       _updateSnapshot(notify: true);
-      if (state == TimerState.stopped) {
+      if (state == TimerState.finished) {
         await loadRecentSessions();
       }
     });
 
     _updateSnapshot(notify: false);
     await loadRecentSessions();
+    await loadCategories();
 
     _isLoading = false;
     notifyListeners();
@@ -71,7 +79,10 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> startTimer() async {
-    await _dependencies.startTimer();
+    await _dependencies.startTimer(
+      category: _selectedCategory,
+      label: _selectedLabel,
+    );
     _updateSnapshot();
   }
 
@@ -92,7 +103,24 @@ class HomeController extends ChangeNotifier {
 
   Future<void> resetTimer() async {
     await _dependencies.resetTimer();
+    _selectedCategory = null;
+    _selectedLabel = null;
     _updateSnapshot();
+  }
+
+  Future<void> loadCategories() async {
+    try {
+      _categories = await _dependencies.getAllCategories();
+    } catch (_) {
+      _categories = const [];
+    }
+    notifyListeners();
+  }
+
+  void updateCategoryAndLabel(entities.Category? category, String? label) {
+    _selectedCategory = category;
+    _selectedLabel = label;
+    notifyListeners();
   }
 
   void _updateSnapshot({bool notify = false}) {

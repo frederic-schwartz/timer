@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import '../entities/category.dart';
 import '../entities/timer_session.dart';
 import '../entities/timer_snapshot.dart';
 import '../entities/timer_state.dart';
@@ -17,7 +18,7 @@ abstract class TimerRepository {
   TimerSnapshot snapshot();
 
   Future<void> initialize();
-  Future<void> startTimer();
+  Future<void> startTimer({Category? category, String? label});
   Future<void> pauseTimer();
   Future<void> stopTimer();
   Future<void> reset();

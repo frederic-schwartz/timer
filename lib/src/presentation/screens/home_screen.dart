@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/timer_session.dart';
 import '../../domain/entities/timer_state.dart';
 import '../controllers/home_controller.dart';
+import '../widgets/category_selection_dialog.dart';
 import 'about_screen.dart';
 import 'sessions_screen.dart';
 import 'settings_screen.dart';
@@ -32,10 +33,10 @@ class _HomeScreenState extends State<HomeScreen> {
     if (mounted) {
       final currentState = _controller.currentState;
 
-      // Si le timer vient d'être stoppé (transition vers stopped), remonter la liste au début
+      // Si le timer vient d'être stoppé (transition vers finished), remonter la liste au début
       if (_previousState != null &&
-          _previousState != TimerState.stopped &&
-          currentState == TimerState.stopped &&
+          _previousState != TimerState.finished &&
+          currentState == TimerState.finished &&
           _scrollController.hasClients) {
         _scrollController.animateTo(
           0,
@@ -73,6 +74,24 @@ class _HomeScreenState extends State<HomeScreen> {
     await _controller.resetTimer();
   }
 
+  Future<void> _showCategoryDialog(BuildContext context) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => CategorySelectionDialog(
+        categories: _controller.categories,
+        selectedCategory: _controller.selectedCategory,
+        currentLabel: _controller.selectedLabel,
+      ),
+    );
+
+    if (result != null) {
+      _controller.updateCategoryAndLabel(
+        result['category'],
+        result['label'],
+      );
+    }
+  }
+
   Color _stateColor(TimerState state, ThemeData theme) {
     switch (state) {
       case TimerState.running:
@@ -83,6 +102,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return theme.colorScheme.tertiary;
       case TimerState.stopped:
         return theme.colorScheme.primary;
+      case TimerState.finished:
+        return theme.colorScheme.tertiary;
     }
   }
 
@@ -96,6 +117,8 @@ class _HomeScreenState extends State<HomeScreen> {
         return 'Prêt à reprendre';
       case TimerState.stopped:
         return 'Arrêté';
+      case TimerState.finished:
+        return 'Terminé';
     }
   }
 
@@ -216,7 +239,26 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _StateBadge(label: _stateLabel(state), color: accent),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              _StateBadge(label: _stateLabel(state), color: accent),
+              IconButton(
+                onPressed: () => _showCategoryDialog(context),
+                icon: const Icon(Icons.label_outline),
+                iconSize: 20,
+                padding: const EdgeInsets.all(8),
+                constraints: const BoxConstraints(
+                  minWidth: 36,
+                  minHeight: 36,
+                ),
+                style: IconButton.styleFrom(
+                  backgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                  foregroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                ),
+              ),
+            ],
+          ),
           const SizedBox(height: 24),
           Align(
             alignment: Alignment.center,
@@ -299,6 +341,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final theme = Theme.of(context);
     final isRunning = state == TimerState.running;
     final isPaused = state == TimerState.paused;
+    final isFinished = state == TimerState.finished;
     final primaryLabel = isRunning
         ? 'Pause'
         : isPaused
@@ -309,7 +352,7 @@ class _HomeScreenState extends State<HomeScreen> {
       children: [
         Expanded(
           child: FilledButton.icon(
-            onPressed: isRunning ? _pauseTimer : _startTimer,
+            onPressed: isFinished ? null : (isRunning ? _pauseTimer : _startTimer),
             icon: Icon(isRunning ? Icons.pause_rounded : Icons.play_arrow_rounded, size: 26),
             label: Text(primaryLabel),
             style: FilledButton.styleFrom(
@@ -318,28 +361,30 @@ class _HomeScreenState extends State<HomeScreen> {
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
               backgroundColor: _stateColor(state, theme),
               foregroundColor: theme.colorScheme.onPrimary,
+              disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),
+              disabledForegroundColor: theme.colorScheme.onSurface.withValues(alpha: 0.4),
             ),
           ),
         ),
         const SizedBox(width: 16),
         Expanded(
           child: FilledButton.icon(
-            onPressed: state == TimerState.ready
+            onPressed: (state == TimerState.ready || isFinished)
                 ? _resetTimer
                 : (state != TimerState.stopped ? _stopTimer : null),
             icon: Icon(
-              state == TimerState.ready ? Icons.refresh_rounded : Icons.stop_rounded,
+              (state == TimerState.ready || isFinished) ? Icons.refresh_rounded : Icons.stop_rounded,
               size: 26
             ),
-            label: Text(state == TimerState.ready ? 'Reset' : 'Stop'),
+            label: Text((state == TimerState.ready || isFinished) ? 'Reset' : 'Stop'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
               shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
-              backgroundColor: state == TimerState.ready
+              backgroundColor: (state == TimerState.ready || isFinished)
                   ? theme.colorScheme.surfaceContainerHighest
                   : theme.colorScheme.errorContainer,
-              foregroundColor: state == TimerState.ready
+              foregroundColor: (state == TimerState.ready || isFinished)
                   ? theme.colorScheme.onSurface
                   : theme.colorScheme.onErrorContainer,
               disabledBackgroundColor: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.2),

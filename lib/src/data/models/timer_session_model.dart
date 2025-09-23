@@ -1,4 +1,5 @@
 import '../../domain/entities/timer_session.dart';
+import '../../domain/entities/category.dart';
 
 class TimerSessionModel extends TimerSession {
   const TimerSessionModel({
@@ -8,6 +9,8 @@ class TimerSessionModel extends TimerSession {
     super.totalPausedDuration,
     super.isRunning,
     super.isPaused,
+    super.category,
+    super.label,
   });
 
   factory TimerSessionModel.fromEntity(TimerSession session) {
@@ -18,10 +21,12 @@ class TimerSessionModel extends TimerSession {
       totalPausedDuration: session.totalPausedDuration,
       isRunning: session.isRunning,
       isPaused: session.isPaused,
+      category: session.category,
+      label: session.label,
     );
   }
 
-  factory TimerSessionModel.fromMap(Map<String, dynamic> map) {
+  factory TimerSessionModel.fromMap(Map<String, dynamic> map, {Category? category}) {
     return TimerSessionModel(
       id: map['id'] as int?,
       startTime: DateTime.fromMillisecondsSinceEpoch(map['startTime'] as int),
@@ -31,6 +36,8 @@ class TimerSessionModel extends TimerSession {
       totalPausedDuration: map['totalPausedDuration'] as int? ?? 0,
       isRunning: (map['isRunning'] as int? ?? 0) == 1,
       isPaused: (map['isPaused'] as int? ?? 0) == 1,
+      category: category,
+      label: map['label'] as String?,
     );
   }
 
@@ -42,6 +49,8 @@ class TimerSessionModel extends TimerSession {
       'totalPausedDuration': totalPausedDuration,
       'isRunning': isRunning ? 1 : 0,
       'isPaused': isPaused ? 1 : 0,
+      'categoryId': category?.id,
+      'label': label,
     };
   }
 
@@ -52,6 +61,8 @@ class TimerSessionModel extends TimerSession {
     int? totalPausedDuration,
     bool? isRunning,
     bool? isPaused,
+    Category? category,
+    String? label,
   }) {
     return TimerSessionModel(
       id: id ?? this.id,
@@ -60,6 +71,8 @@ class TimerSessionModel extends TimerSession {
       totalPausedDuration: totalPausedDuration ?? this.totalPausedDuration,
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
+      category: category ?? this.category,
+      label: label ?? this.label,
     );
   }
 }

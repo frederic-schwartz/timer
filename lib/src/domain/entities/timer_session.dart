@@ -1,3 +1,5 @@
+import 'category.dart';
+
 class TimerSession {
   final int? id;
   final DateTime startTime;
@@ -5,6 +7,8 @@ class TimerSession {
   final int totalPausedDuration; // in milliseconds
   final bool isRunning;
   final bool isPaused;
+  final Category? category;
+  final String? label;
 
   const TimerSession({
     this.id,
@@ -13,6 +17,8 @@ class TimerSession {
     this.totalPausedDuration = 0,
     this.isRunning = true,
     this.isPaused = false,
+    this.category,
+    this.label,
   });
 
   Duration get currentDuration {
@@ -29,6 +35,8 @@ class TimerSession {
     int? totalPausedDuration,
     bool? isRunning,
     bool? isPaused,
+    Category? category,
+    String? label,
   }) {
     return TimerSession(
       id: id ?? this.id,
@@ -37,6 +45,8 @@ class TimerSession {
       totalPausedDuration: totalPausedDuration ?? this.totalPausedDuration,
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
+      category: category ?? this.category,
+      label: label ?? this.label,
     );
   }
 }

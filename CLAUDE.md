@@ -14,12 +14,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Code Quality
 - `flutter analyze` - Run static analysis on Dart code
-- `flutter test` - Run all tests
 
 ### Development & Build
-- `flutter run` - Run the app in debug mode
-- `flutter build apk` - Build Android APK
-- `flutter build ios` - Build iOS app
 - `flutter clean` - Clean build artifacts
 
 ### Dependencies

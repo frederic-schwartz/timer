@@ -1,3 +1,4 @@
+import '../../domain/entities/category.dart';
 import '../../domain/entities/timer_session.dart';
 import '../../domain/entities/timer_snapshot.dart';
 import '../../domain/entities/timer_state.dart';
@@ -35,7 +36,8 @@ class TimerRepositoryImpl implements TimerRepository {
   Future<void> initialize() => _timerLocalDataSource.initialize();
 
   @override
-  Future<void> startTimer() => _timerLocalDataSource.startTimer();
+  Future<void> startTimer({Category? category, String? label}) =>
+      _timerLocalDataSource.startTimer(category: category, label: label);
 
   @override
   Future<void> pauseTimer() => _timerLocalDataSource.pauseTimer();
