@@ -27,7 +27,7 @@ class StatisticsController extends ChangeNotifier {
   final AppDependencies _dependencies;
 
   bool _isLoading = true;
-  TimePeriod _selectedPeriod = TimePeriod.weekly;
+  TimePeriod _selectedPeriod = TimePeriod.monthly;
   DateTime _currentPeriodDate = DateTime.now(); // Date de référence pour la période courante
   List<TimerSession> _allSessions = const []; // Toutes les sessions
   List<TimerSession> _filteredSessions = const []; // Sessions filtrées par période

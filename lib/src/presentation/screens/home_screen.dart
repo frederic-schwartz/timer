@@ -179,27 +179,52 @@ class _HomeScreenState extends State<HomeScreen> {
       child: ListView(
         padding: EdgeInsets.zero,
         children: [
-          DrawerHeader(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  theme.colorScheme.primary,
-                  theme.colorScheme.primaryContainer,
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Align(
-              alignment: Alignment.bottomLeft,
-              child: Text(
-                'Tockee',
-                style: TextStyle(
-                  color: theme.colorScheme.onPrimary,
-                  fontSize: 28,
-                  fontWeight: FontWeight.bold,
+          SizedBox(
+            height: 180, // Un peu plus haut pour permettre le chevauchement
+            child: Stack(
+              children: [
+                Container(
+                  height: 160,
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        theme.colorScheme.primary,
+                        theme.colorScheme.primaryContainer,
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+                  ),
                 ),
-              ),
+                Positioned(
+                  bottom: 0,
+                  left: 16,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: Colors.white,
+                        width: 3,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withValues(alpha: 0.2),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/icon/app_icon.png',
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           ListTile(
