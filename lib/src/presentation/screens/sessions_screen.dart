@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/timer_session.dart';
 import '../controllers/sessions_controller.dart';
 import '../widgets/glass_card.dart';
+import 'edit_session_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
   const SessionsScreen({super.key});
@@ -44,6 +45,20 @@ class _SessionsScreenState extends State<SessionsScreen> {
 
   String _formatDateTime(DateTime dateTime) {
     return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  }
+
+  Future<void> _editSession(TimerSession session) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditSessionScreen(session: session),
+      ),
+    );
+
+    if (result == true) {
+      // Session modifiée, recharger les données
+      _controller.loadSessions();
+    }
   }
 
 
@@ -222,6 +237,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                           PopupMenuButton(
                                             itemBuilder: (context) => [
                                               PopupMenuItem(
+                                                value: 'edit',
+                                                child: const Row(
+                                                  children: [
+                                                    Icon(Icons.edit_outlined),
+                                                    SizedBox(width: 8),
+                                                    Text('Modifier'),
+                                                  ],
+                                                ),
+                                              ),
+                                              PopupMenuItem(
                                                 value: 'delete',
                                                 child: const Row(
                                                   children: [
@@ -233,7 +258,9 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                               ),
                                             ],
                                             onSelected: (value) {
-                                              if (value == 'delete') {
+                                              if (value == 'edit') {
+                                                _editSession(session);
+                                              } else if (value == 'delete') {
                                                 _deleteSession(session);
                                               }
                                             },

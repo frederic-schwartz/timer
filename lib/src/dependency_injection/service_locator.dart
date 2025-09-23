@@ -27,6 +27,7 @@ import '../domain/usecases/start_timer.dart';
 import '../domain/usecases/stop_timer.dart';
 import '../domain/usecases/update_category.dart';
 import '../domain/usecases/update_current_session.dart';
+import '../domain/usecases/update_session.dart';
 import '../domain/usecases/watch_timer_duration.dart';
 import '../domain/usecases/watch_timer_state.dart';
 
@@ -58,6 +59,7 @@ class AppDependencies {
   late final GetTimerSnapshot getTimerSnapshot;
 
   late final GetAllSessions getAllSessions;
+  late final UpdateSession updateSession;
   late final DeleteSession deleteSession;
   late final ClearCompletedSessions clearCompletedSessions;
 
@@ -92,6 +94,7 @@ class AppDependencies {
     getTimerSnapshot = GetTimerSnapshot(timerRepository);
 
     getAllSessions = GetAllSessions(sessionRepository);
+    updateSession = UpdateSession(sessionRepository);
     deleteSession = DeleteSession(sessionRepository);
     clearCompletedSessions = ClearCompletedSessions(sessionRepository);
 

@@ -5,6 +5,7 @@ import '../../domain/entities/timer_state.dart';
 import '../controllers/home_controller.dart';
 import '../widgets/category_selection_dialog.dart';
 import 'about_screen.dart';
+import 'edit_session_screen.dart';
 import 'sessions_screen.dart';
 import 'settings_screen.dart';
 
@@ -69,6 +70,44 @@ class _HomeScreenState extends State<HomeScreen> {
 
   Future<void> _stopTimer() async {
     await _controller.stopTimer();
+  }
+
+  Future<void> _editSession(TimerSession session) async {
+    final result = await Navigator.push<bool>(
+      context,
+      MaterialPageRoute(
+        builder: (context) => EditSessionScreen(session: session),
+      ),
+    );
+
+    if (result == true) {
+      // Session modifiée, recharger les données
+      await _controller.loadRecentSessions();
+    }
+  }
+
+  Future<void> _deleteSession(TimerSession session) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer la session'),
+        content: const Text('Êtes-vous sûr de vouloir supprimer cette session ?'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && session.id != null) {
+      await _controller.deleteSession(session.id!);
+    }
   }
 
   Future<void> _resetTimer() async {
@@ -497,7 +536,8 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.only(bottom: index == sessions.length - 1 ? 0 : 12),
             child: _RecentSessionCard(
               session: session,
-              onResume: null,
+              onEdit: () => _editSession(session),
+              onDelete: () => _deleteSession(session),
               durationLabel: _formatDuration(session.totalDuration),
               startLabel: _formatDateTime(session.startedAt),
               pauseLabel: session.totalPauseDuration > 0
@@ -616,14 +656,16 @@ class _StateBadge extends StatelessWidget {
 class _RecentSessionCard extends StatelessWidget {
   const _RecentSessionCard({
     required this.session,
-    this.onResume,
+    this.onEdit,
+    this.onDelete,
     required this.durationLabel,
     required this.startLabel,
     this.pauseLabel,
   });
 
   final TimerSession session;
-  final VoidCallback? onResume;
+  final VoidCallback? onEdit;
+  final VoidCallback? onDelete;
   final String durationLabel;
   final String startLabel;
   final String? pauseLabel;
@@ -634,7 +676,7 @@ class _RecentSessionCard extends StatelessWidget {
     return Material(
       color: Colors.transparent,
       child: InkWell(
-        onTap: onResume,
+        onTap: null, // Plus de clic direct
         borderRadius: BorderRadius.circular(24),
         child: Ink(
           decoration: BoxDecoration(
@@ -781,10 +823,41 @@ class _RecentSessionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                Icon(
-                  Icons.play_arrow_rounded,
-                  color: theme.colorScheme.primary,
-                  size: 28,
+                PopupMenuButton<String>(
+                  icon: Icon(
+                    Icons.more_vert,
+                    color: theme.colorScheme.onSurface.withValues(alpha: 0.6),
+                    size: 24,
+                  ),
+                  itemBuilder: (context) => [
+                    PopupMenuItem(
+                      value: 'edit',
+                      child: const Row(
+                        children: [
+                          Icon(Icons.edit_outlined),
+                          SizedBox(width: 8),
+                          Text('Modifier'),
+                        ],
+                      ),
+                    ),
+                    PopupMenuItem(
+                      value: 'delete',
+                      child: const Row(
+                        children: [
+                          Icon(Icons.delete_outline, color: Colors.red),
+                          SizedBox(width: 8),
+                          Text('Supprimer'),
+                        ],
+                      ),
+                    ),
+                  ],
+                  onSelected: (value) {
+                    if (value == 'edit') {
+                      onEdit?.call();
+                    } else if (value == 'delete') {
+                      onDelete?.call();
+                    }
+                  },
                 ),
               ],
             ),

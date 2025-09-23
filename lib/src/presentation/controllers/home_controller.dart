@@ -108,6 +108,11 @@ class HomeController extends ChangeNotifier {
     _updateSnapshot();
   }
 
+  Future<void> deleteSession(int sessionId) async {
+    await _dependencies.deleteSession(sessionId);
+    await loadRecentSessions(); // Recharger la liste
+  }
+
   Future<void> loadCategories() async {
     try {
       _categories = await _dependencies.getAllCategories();
