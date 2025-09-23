@@ -499,7 +499,7 @@ class _HomeScreenState extends State<HomeScreen> {
               session: session,
               onResume: () => _controller.resumeSession(session),
               durationLabel: _formatDuration(session.currentDuration),
-              startLabel: _formatDateTime(session.startTime),
+              startLabel: _formatDateTime(session.createdAt),
               pauseLabel: session.totalPausedDuration > 0
                   ? _formatDuration(Duration(milliseconds: session.totalPausedDuration))
                   : null,
@@ -686,11 +686,11 @@ class _RecentSessionCard extends StatelessWidget {
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
-                      if (session.endTime != null)
+                      if (!session.isRunning && !session.isPaused)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            'Fin: ${_formatEndDate(session.endTime!)}',
+                            'Fin: ${_formatEndDate(session.updatedAt)}',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
@@ -794,7 +794,7 @@ class _RecentSessionCard extends StatelessWidget {
     );
   }
 
-  String _formatEndDate(DateTime endTime) {
-    return '${endTime.day.toString().padLeft(2, '0')}/${endTime.month.toString().padLeft(2, '0')} ${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+  String _formatEndDate(DateTime updatedAt) {
+    return '${updatedAt.day.toString().padLeft(2, '0')}/${updatedAt.month.toString().padLeft(2, '0')} ${updatedAt.hour.toString().padLeft(2, '0')}:${updatedAt.minute.toString().padLeft(2, '0')}';
   }
 }

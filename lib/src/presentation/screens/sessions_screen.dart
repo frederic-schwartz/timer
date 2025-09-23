@@ -186,16 +186,16 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                                 ),
                                                 const SizedBox(height: 6),
                                                 Text(
-                                                  'Début: ${_formatDateTime(session.startTime)}',
+                                                  'Début: ${_formatDateTime(session.createdAt)}',
                                                   style: theme.textTheme.bodyMedium?.copyWith(
                                                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                                                   ),
                                                 ),
-                                                if (session.endTime != null)
+                                                if (!session.isRunning && !session.isPaused)
                                                   Padding(
                                                     padding: const EdgeInsets.only(top: 4),
                                                     child: Text(
-                                                      'Fin: ${_formatDateTime(session.endTime!)}',
+                                                      'Fin: ${_formatDateTime(session.updatedAt)}',
                                                       style: theme.textTheme.bodyMedium?.copyWith(
                                                         color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                                                       ),

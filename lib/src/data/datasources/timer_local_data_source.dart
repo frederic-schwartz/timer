@@ -12,16 +12,14 @@ class TimerLocalDataSource {
   TimerLocalDataSource(this._sessionLocalDataSource);
 
   static const String _pauseStartTimeKey = 'pause_start_time';
-  static const String _totalPausedDurationKey = 'total_paused_duration';
+  static const String _sessionStartTimeKey = 'session_start_time';
 
   final SessionLocalDataSource _sessionLocalDataSource;
 
   TimerSessionModel? _currentSession;
   Timer? _timer;
   DateTime? _pauseStartTime;
-  int _totalPausedDuration = 0;
-  Duration? _frozenDuration;
-  bool _isResumedSession = false;
+  DateTime? _sessionStartTime; // Quand la session actuelle a commencé
 
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
   final StreamController<TimerState> _stateController = StreamController<TimerState>.broadcast();
@@ -35,20 +33,21 @@ class TimerLocalDataSource {
     if (_currentSession == null) return TimerState.stopped;
     if (_currentSession!.isPaused) return TimerState.paused;
     if (_currentSession!.isRunning) return TimerState.running;
-    // Si c'est une session reprise, c'est ready
-    if (_isResumedSession) return TimerState.ready;
-    // Si la session a un endTime, c'est qu'elle a été stoppée (finished)
-    if (_currentSession!.endTime != null) return TimerState.finished;
-    // Sinon c'est une session prête à être reprise ou continuée (ready)
-    return TimerState.ready;
+    // Si on a une session mais pas en cours, c'est soit ready soit finished
+    if (_sessionStartTime == null) return TimerState.ready;
+    return TimerState.finished;
   }
 
   Duration get currentDuration {
     if (_currentSession == null) return Duration.zero;
 
-    if (!_currentSession!.isRunning && _frozenDuration != null) {
-      return _frozenDuration!;
+    // Si session pas en cours, retourner la durée stockée
+    if (!_currentSession!.isRunning) {
+      return Duration(milliseconds: _currentSession!.totalDuration);
     }
+
+    // Session en cours - calculer durée actuelle
+    if (_sessionStartTime == null) return Duration.zero;
 
     DateTime endTime;
     if (_currentSession!.isPaused && _pauseStartTime != null) {
@@ -57,11 +56,16 @@ class TimerLocalDataSource {
       endTime = DateTime.now();
     }
 
-    final elapsed = endTime.difference(_currentSession!.startTime).inMilliseconds;
-    return Duration(milliseconds: elapsed - _totalPausedDuration);
+    final elapsedThisSession = endTime.difference(_sessionStartTime!).inMilliseconds;
+    final currentPauseDuration = _currentSession!.isPaused && _pauseStartTime != null
+        ? endTime.difference(_pauseStartTime!).inMilliseconds
+        : 0;
+
+    final totalDuration = _currentSession!.totalDuration + elapsedThisSession - currentPauseDuration;
+    return Duration(milliseconds: totalDuration);
   }
 
-  Duration get totalPausedDuration => Duration(milliseconds: _totalPausedDuration);
+  Duration get totalPausedDuration => Duration(milliseconds: _currentSession?.totalPausedDuration ?? 0);
 
   Duration get currentPauseDuration {
     if (_currentSession == null || !_currentSession!.isPaused || _pauseStartTime == null) {
@@ -73,7 +77,7 @@ class TimerLocalDataSource {
   }
 
   Duration get totalPausedDurationRealTime {
-    final basePauseDuration = Duration(milliseconds: _totalPausedDuration);
+    final basePauseDuration = Duration(milliseconds: _currentSession?.totalPausedDuration ?? 0);
     if (_currentSession != null && _currentSession!.isPaused && _pauseStartTime != null) {
       final currentPause = DateTime.now().difference(_pauseStartTime!);
       return basePauseDuration + currentPause;
@@ -83,7 +87,7 @@ class TimerLocalDataSource {
 
   Future<void> initialize() async {
     await _loadCurrentSession();
-    await _loadPauseState();
+    await _loadState();
 
     if (_currentSession != null && _currentSession!.isRunning) {
       _startTimer();
@@ -92,28 +96,36 @@ class TimerLocalDataSource {
 
   Future<void> _loadCurrentSession() async {
     _currentSession = await _sessionLocalDataSource.getCurrentSession();
-    if (_currentSession != null) {
-      _totalPausedDuration = _currentSession!.totalPausedDuration;
-    }
   }
 
-  Future<void> _loadPauseState() async {
+  Future<void> _loadState() async {
     final prefs = await SharedPreferences.getInstance();
     final pauseStartTimeMs = prefs.getInt(_pauseStartTimeKey);
+    final sessionStartTimeMs = prefs.getInt(_sessionStartTimeKey);
 
     if (pauseStartTimeMs != null && _currentSession != null && _currentSession!.isPaused) {
       _pauseStartTime = DateTime.fromMillisecondsSinceEpoch(pauseStartTimeMs);
     }
+
+    if (sessionStartTimeMs != null && _currentSession != null && _currentSession!.isRunning) {
+      _sessionStartTime = DateTime.fromMillisecondsSinceEpoch(sessionStartTimeMs);
+    }
   }
 
-  Future<void> _savePauseState() async {
+  Future<void> _saveState() async {
     final prefs = await SharedPreferences.getInstance();
+
     if (_pauseStartTime != null) {
       await prefs.setInt(_pauseStartTimeKey, _pauseStartTime!.millisecondsSinceEpoch);
     } else {
       await prefs.remove(_pauseStartTimeKey);
     }
-    await prefs.setInt(_totalPausedDurationKey, _totalPausedDuration);
+
+    if (_sessionStartTime != null) {
+      await prefs.setInt(_sessionStartTimeKey, _sessionStartTime!.millisecondsSinceEpoch);
+    } else {
+      await prefs.remove(_sessionStartTimeKey);
+    }
   }
 
   void _startTimer() {
@@ -126,72 +138,68 @@ class TimerLocalDataSource {
   }
 
   Future<void> startTimer({Category? category, String? label}) async {
-    // Si pas de session ou session terminée ou session reprise, traiter différemment
-    if (_currentSession == null || (_currentSession != null && _currentSession!.endTime != null && !_isResumedSession)) {
-      // Créer une nouvelle session
+    final now = DateTime.now();
+
+    // Si pas de session, en créer une nouvelle
+    if (_currentSession == null) {
       final session = TimerSessionModel(
-        startTime: DateTime.now(),
+        createdAt: now,
+        updatedAt: now,
         category: category,
         label: label,
       );
       final id = await _sessionLocalDataSource.insertSession(session);
       _currentSession = session.copyWithModel(id: id);
-      _totalPausedDuration = 0;
-      _frozenDuration = null;
-      _isResumedSession = false;
+      _sessionStartTime = now;
 
       _durationController.add(Duration.zero);
-    } else if (_currentSession!.isPaused) {
+    }
+    // Si session en pause, la reprendre
+    else if (_currentSession!.isPaused) {
+      // Calculer la durée de pause actuelle
+      int pauseDuration = 0;
       if (_pauseStartTime != null) {
-        final pauseDuration = DateTime.now().difference(_pauseStartTime!).inMilliseconds;
-        _totalPausedDuration += pauseDuration;
+        pauseDuration = now.difference(_pauseStartTime!).inMilliseconds;
         _pauseStartTime = null;
       }
 
-      _currentSession = _currentSession!.copyWithModel(isPaused: false, isRunning: true);
-      await _sessionLocalDataSource.updateSession(
-        _currentSession!.copyWithModel(totalPausedDuration: _totalPausedDuration),
+      _currentSession = _currentSession!.copyWithModel(
+        isPaused: false,
+        isRunning: true,
+        updatedAt: now,
+        totalPausedDuration: _currentSession!.totalPausedDuration + pauseDuration,
       );
-
-    } else if (!_currentSession!.isRunning) {
-      if (_frozenDuration != null) {
-        final totalElapsedTime = _frozenDuration! + Duration(milliseconds: _totalPausedDuration);
-
-        _currentSession = _currentSession!.copyWithModel(
-          isRunning: true,
-          startTime: DateTime.now().subtract(totalElapsedTime),
-          // Garder la catégorie et libellé actuels (possiblement modifiés)
-          category: category ?? _currentSession!.category,
-          label: label ?? _currentSession!.label,
-        );
-        _frozenDuration = null;
-        _isResumedSession = false; // Plus une session reprise une fois démarrée
-      } else {
-        _currentSession = _currentSession!.copyWithModel(
-          isRunning: true,
-          category: category ?? _currentSession!.category,
-          label: label ?? _currentSession!.label,
-        );
-        _isResumedSession = false;
-      }
+      await _sessionLocalDataSource.updateSession(_currentSession!);
+    }
+    // Si session prête (not running), la démarrer/reprendre
+    else if (!_currentSession!.isRunning) {
+      _currentSession = _currentSession!.copyWithModel(
+        isRunning: true,
+        updatedAt: now,
+        category: category ?? _currentSession!.category,
+        label: label ?? _currentSession!.label,
+      );
+      _sessionStartTime = now;
       await _sessionLocalDataSource.updateSession(_currentSession!);
     }
 
-    await _savePauseState();
+    await _saveState();
     _startTimer();
     _stateController.add(TimerState.running);
   }
 
   Future<void> pauseTimer() async {
     if (_currentSession != null && !_currentSession!.isPaused) {
-      _pauseStartTime = DateTime.now();
-      _currentSession = _currentSession!.copyWithModel(isPaused: true);
+      final now = DateTime.now();
+      _pauseStartTime = now;
 
-      await _sessionLocalDataSource.updateSession(
-        _currentSession!.copyWithModel(totalPausedDuration: _totalPausedDuration),
+      _currentSession = _currentSession!.copyWithModel(
+        isPaused: true,
+        updatedAt: now,
       );
-      await _savePauseState();
 
+      await _sessionLocalDataSource.updateSession(_currentSession!);
+      await _saveState();
 
       _stateController.add(TimerState.paused);
     }
@@ -199,39 +207,38 @@ class TimerLocalDataSource {
 
   Future<void> stopTimer() async {
     if (_currentSession != null) {
-      DateTime endTime;
-      DateTime? newStartTime;
+      final now = DateTime.now();
 
-      if (!_currentSession!.isRunning && _frozenDuration != null) {
-        // Session was resumed - update startTime to make it appear at top of list
-        endTime = DateTime.now();
-        newStartTime = endTime.subtract(_frozenDuration!);
-      } else {
-        endTime = DateTime.now();
-        if (_currentSession!.isPaused && _pauseStartTime != null) {
-          final pauseDuration = DateTime.now().difference(_pauseStartTime!).inMilliseconds;
-          _totalPausedDuration += pauseDuration;
-          _pauseStartTime = null;
-        }
+      // Calculer la durée finale
+      int finalTotalDuration = _currentSession!.totalDuration;
+      int finalPausedDuration = _currentSession!.totalPausedDuration;
+
+      // Si on était en cours d'exécution, ajouter le temps écoulé
+      if (_sessionStartTime != null) {
+        final elapsedThisSession = now.difference(_sessionStartTime!).inMilliseconds;
+        finalTotalDuration += elapsedThisSession;
       }
 
-      final updatedSession = _currentSession!.copyWithModel(
+      // Si on était en pause, ajouter la durée de pause actuelle
+      if (_currentSession!.isPaused && _pauseStartTime != null) {
+        final pauseDuration = now.difference(_pauseStartTime!).inMilliseconds;
+        finalPausedDuration += pauseDuration;
+        _pauseStartTime = null;
+      }
+
+      _currentSession = _currentSession!.copyWithModel(
         isRunning: false,
         isPaused: false,
-        startTime: newStartTime ?? _currentSession!.startTime,
-        endTime: endTime,
-        totalPausedDuration: _totalPausedDuration,
+        updatedAt: now, // Mettre à jour pour apparaître en haut de liste
+        totalDuration: finalTotalDuration,
+        totalPausedDuration: finalPausedDuration,
       );
 
-      await _sessionLocalDataSource.updateSession(updatedSession);
+      await _sessionLocalDataSource.updateSession(_currentSession!);
 
-      // Garder la session en mémoire pour afficher la durée finale
-      _currentSession = updatedSession;
-      _frozenDuration = updatedSession.currentDuration;
-      _isResumedSession = false; // Session stoppée, pas reprise
-
+      _sessionStartTime = null;
       _stateController.add(TimerState.finished);
-      _durationController.add(updatedSession.currentDuration);
+      _durationController.add(_currentSession!.currentDuration);
 
       _timer?.cancel();
       _timer = null;
@@ -241,27 +248,17 @@ class TimerLocalDataSource {
   Future<void> resumeSession(TimerSessionModel session) async {
     if (session.id == null) return;
 
-    // Garder la session avec endTime mais marquer comme reprise
+    // Préparer la session pour reprise
     _currentSession = session.copyWithModel(
       isRunning: false,
       isPaused: false,
     );
-    _isResumedSession = true; // Marquer comme session reprise
 
-    if (session.endTime != null) {
-      final totalDuration = session.endTime!.difference(session.startTime);
-      _frozenDuration = Duration(milliseconds: totalDuration.inMilliseconds - session.totalPausedDuration);
-    } else {
-      _frozenDuration = session.currentDuration;
-    }
-
-    _totalPausedDuration = session.totalPausedDuration;
-
-    // Ne pas modifier endTime dans la base de données pour l'instant
-    // await _sessionLocalDataSource.updateSession(_currentSession!);
+    _sessionStartTime = null; // Sera défini quand on démarrera
+    _pauseStartTime = null;
 
     _stateController.add(TimerState.ready);
-    _durationController.add(_frozenDuration ?? Duration.zero);
+    _durationController.add(session.currentDuration);
   }
 
   Future<void> reset() async {
@@ -269,12 +266,10 @@ class TimerLocalDataSource {
     _timer = null;
 
     _currentSession = null;
-    _totalPausedDuration = 0;
-    _frozenDuration = null;
     _pauseStartTime = null;
-    _isResumedSession = false;
+    _sessionStartTime = null;
 
-    await _clearPauseState();
+    await _clearState();
 
     _stateController.add(TimerState.stopped);
     _durationController.add(Duration.zero);
@@ -282,29 +277,20 @@ class TimerLocalDataSource {
 
   Future<void> updateCurrentSessionCategoryLabel(Category? category, String? label) async {
     if (_currentSession != null && _currentSession!.id != null) {
-      // Mettre à jour la session en mémoire
       _currentSession = _currentSession!.copyWithModel(
         category: category,
         label: label,
+        updatedAt: DateTime.now(),
       );
 
-      // Pour une session reprise, il faut remettre endTime pour la sauvegarder correctement
-      TimerSessionModel sessionToSave = _currentSession!;
-      if (_isResumedSession && _frozenDuration != null) {
-        // Recalculer endTime basé sur la durée figée
-        final endTime = _currentSession!.startTime.add(_frozenDuration! + Duration(milliseconds: _currentSession!.totalPausedDuration));
-        sessionToSave = _currentSession!.copyWithModel(endTime: endTime);
-      }
-
-      await _sessionLocalDataSource.updateSession(sessionToSave);
+      await _sessionLocalDataSource.updateSession(_currentSession!);
     }
   }
 
-
-  Future<void> _clearPauseState() async {
+  Future<void> _clearState() async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.remove(_pauseStartTimeKey);
-    await prefs.remove(_totalPausedDurationKey);
+    await prefs.remove(_sessionStartTimeKey);
   }
 
   void dispose() {

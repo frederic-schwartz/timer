@@ -4,8 +4,9 @@ import '../../domain/entities/category.dart';
 class TimerSessionModel extends TimerSession {
   const TimerSessionModel({
     super.id,
-    required super.startTime,
-    super.endTime,
+    required super.createdAt,
+    super.updatedAt,
+    super.totalDuration,
     super.totalPausedDuration,
     super.isRunning,
     super.isPaused,
@@ -16,8 +17,9 @@ class TimerSessionModel extends TimerSession {
   factory TimerSessionModel.fromEntity(TimerSession session) {
     return TimerSessionModel(
       id: session.id,
-      startTime: session.startTime,
-      endTime: session.endTime,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      totalDuration: session.totalDuration,
       totalPausedDuration: session.totalPausedDuration,
       isRunning: session.isRunning,
       isPaused: session.isPaused,
@@ -29,10 +31,9 @@ class TimerSessionModel extends TimerSession {
   factory TimerSessionModel.fromMap(Map<String, dynamic> map, {Category? category}) {
     return TimerSessionModel(
       id: map['id'] as int?,
-      startTime: DateTime.fromMillisecondsSinceEpoch(map['startTime'] as int),
-      endTime: map['endTime'] != null
-          ? DateTime.fromMillisecondsSinceEpoch(map['endTime'] as int)
-          : null,
+      createdAt: DateTime.fromMillisecondsSinceEpoch(map['createdAt'] as int),
+      updatedAt: DateTime.fromMillisecondsSinceEpoch(map['updatedAt'] as int),
+      totalDuration: map['totalDuration'] as int? ?? 0,
       totalPausedDuration: map['totalPausedDuration'] as int? ?? 0,
       isRunning: (map['isRunning'] as int? ?? 0) == 1,
       isPaused: (map['isPaused'] as int? ?? 0) == 1,
@@ -44,8 +45,9 @@ class TimerSessionModel extends TimerSession {
   Map<String, dynamic> toMap() {
     return {
       'id': id,
-      'startTime': startTime.millisecondsSinceEpoch,
-      'endTime': endTime?.millisecondsSinceEpoch,
+      'createdAt': createdAt.millisecondsSinceEpoch,
+      'updatedAt': updatedAt.millisecondsSinceEpoch,
+      'totalDuration': totalDuration,
       'totalPausedDuration': totalPausedDuration,
       'isRunning': isRunning ? 1 : 0,
       'isPaused': isPaused ? 1 : 0,
@@ -56,8 +58,9 @@ class TimerSessionModel extends TimerSession {
 
   TimerSessionModel copyWithModel({
     int? id,
-    DateTime? startTime,
-    DateTime? endTime,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? totalDuration,
     int? totalPausedDuration,
     bool? isRunning,
     bool? isPaused,
@@ -66,8 +69,9 @@ class TimerSessionModel extends TimerSession {
   }) {
     return TimerSessionModel(
       id: id ?? this.id,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      totalDuration: totalDuration ?? this.totalDuration,
       totalPausedDuration: totalPausedDuration ?? this.totalPausedDuration,
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,

@@ -41,8 +41,9 @@ class SessionLocalDataSource {
     await db.execute('''
       CREATE TABLE $_tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        startTime INTEGER NOT NULL,
-        endTime INTEGER,
+        createdAt INTEGER NOT NULL,
+        updatedAt INTEGER NOT NULL,
+        totalDuration INTEGER DEFAULT 0,
         totalPausedDuration INTEGER DEFAULT 0,
         isRunning INTEGER DEFAULT 1,
         isPaused INTEGER DEFAULT 0,
@@ -73,7 +74,7 @@ class SessionLocalDataSource {
       FROM $_tableName s
       LEFT JOIN categories c ON s.categoryId = c.id
       WHERE s.isRunning = ?
-      ORDER BY s.startTime DESC
+      ORDER BY s.updatedAt DESC
       LIMIT 1
     ''', [1]);
 
@@ -112,7 +113,7 @@ class SessionLocalDataSource {
       SELECT s.*, c.name as category_name, c.color as category_color
       FROM $_tableName s
       LEFT JOIN categories c ON s.categoryId = c.id
-      ORDER BY s.startTime DESC
+      ORDER BY s.updatedAt DESC
     ''');
 
     return result.map((row) {

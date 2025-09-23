@@ -2,8 +2,9 @@ import 'category.dart';
 
 class TimerSession {
   final int? id;
-  final DateTime startTime;
-  final DateTime? endTime;
+  final DateTime createdAt;
+  final DateTime updatedAt;
+  final int totalDuration; // in milliseconds - durée totale accumulée
   final int totalPausedDuration; // in milliseconds
   final bool isRunning;
   final bool isPaused;
@@ -12,26 +13,25 @@ class TimerSession {
 
   const TimerSession({
     this.id,
-    required this.startTime,
-    this.endTime,
+    required this.createdAt,
+    DateTime? updatedAt,
+    this.totalDuration = 0,
     this.totalPausedDuration = 0,
     this.isRunning = true,
     this.isPaused = false,
     this.category,
     this.label,
-  });
+  }) : updatedAt = updatedAt ?? createdAt;
 
   Duration get currentDuration {
-    final now = DateTime.now();
-    final end = endTime ?? now;
-    final totalTime = end.difference(startTime).inMilliseconds;
-    return Duration(milliseconds: totalTime - totalPausedDuration);
+    return Duration(milliseconds: totalDuration);
   }
 
   TimerSession copyWith({
     int? id,
-    DateTime? startTime,
-    DateTime? endTime,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    int? totalDuration,
     int? totalPausedDuration,
     bool? isRunning,
     bool? isPaused,
@@ -40,8 +40,9 @@ class TimerSession {
   }) {
     return TimerSession(
       id: id ?? this.id,
-      startTime: startTime ?? this.startTime,
-      endTime: endTime ?? this.endTime,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      totalDuration: totalDuration ?? this.totalDuration,
       totalPausedDuration: totalPausedDuration ?? this.totalPausedDuration,
       isRunning: isRunning ?? this.isRunning,
       isPaused: isPaused ?? this.isPaused,
