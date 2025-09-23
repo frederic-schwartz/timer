@@ -205,7 +205,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                 color: theme.colorScheme.primary,
                               ),
                             ),
-                            title: const Text('Sessions récentes'),
+                            title: const Text('Dernières sessions'),
                             subtitle: Text(
                               'Afficher $count sessions sur l\'écran principal',
                             ),

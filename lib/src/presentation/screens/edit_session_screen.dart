@@ -20,7 +20,7 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
   late DateTime _startedAt;
   late DateTime? _endedAt;
   late int _totalPauseDuration;
-  late entities.Category? _selectedCategory;
+  entities.Category? _selectedCategory;
   late String _label;
 
   List<entities.Category> _categories = [];
@@ -32,7 +32,6 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
     _startedAt = widget.session.startedAt;
     _endedAt = widget.session.endedAt;
     _totalPauseDuration = widget.session.totalPauseDuration;
-    _selectedCategory = widget.session.category;
     _label = widget.session.label ?? '';
     _loadCategories();
   }
@@ -40,9 +39,24 @@ class _EditSessionScreenState extends State<EditSessionScreen> {
   Future<void> _loadCategories() async {
     try {
       _categories = await _dependencies.getAllCategories();
+
+      // Trouver la catégorie correspondante dans la liste par ID
+      if (widget.session.category != null) {
+        final sessionCategoryId = widget.session.category!.id;
+        _selectedCategory = _categories
+            .cast<entities.Category?>()
+            .firstWhere(
+              (cat) => cat?.id == sessionCategoryId,
+              orElse: () => null,
+            );
+      } else {
+        _selectedCategory = null;
+      }
+
       setState(() {});
     } catch (e) {
       // Ignorer les erreurs
+      _selectedCategory = null;
     }
   }
 

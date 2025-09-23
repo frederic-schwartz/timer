@@ -608,7 +608,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           _buildControls(context, state),
                           const SizedBox(height: 32),
                           Text(
-                            'Sessions récentes',
+                            'Dernières sessions',
                             style: theme.textTheme.titleLarge?.copyWith(
                                   fontWeight: FontWeight.w700,
                                   color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
