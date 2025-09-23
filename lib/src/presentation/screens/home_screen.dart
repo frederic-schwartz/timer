@@ -200,8 +200,8 @@ class _HomeScreenState extends State<HomeScreen> {
                   bottom: 0,
                   left: 16,
                   child: Container(
-                    width: 80,
-                    height: 80,
+                    width: 90,
+                    height: 90,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       border: Border.all(
@@ -227,6 +227,7 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
             ),
           ),
+          const SizedBox(height: 20),
           ListTile(
             leading: const Icon(Icons.history),
             title: const Text('Historique'),
