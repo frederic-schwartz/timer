@@ -150,6 +150,38 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
                   ),
                 ],
               ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  if (_controller.canGoToPreviousPeriod())
+                    IconButton(
+                      onPressed: _controller.goToPreviousPeriod,
+                      icon: const Icon(Icons.chevron_left),
+                      iconSize: 28,
+                    )
+                  else
+                    const SizedBox(width: 48),
+                  Container(
+                    constraints: const BoxConstraints(minWidth: 120),
+                    child: Text(
+                      _controller.getPeriodLabel(),
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                        fontWeight: FontWeight.w600,
+                      ),
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                  if (_controller.canGoToNextPeriod())
+                    IconButton(
+                      onPressed: _controller.goToNextPeriod,
+                      icon: const Icon(Icons.chevron_right),
+                      iconSize: 28,
+                    )
+                  else
+                    const SizedBox(width: 48),
+                ],
+              ),
             ],
           ),
         ),
@@ -226,48 +258,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Expanded(
-                  child: Text(
-                    'Répartition par catégorie',
-                    style: theme.textTheme.titleMedium?.copyWith(
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ),
-                Row(
-                  children: [
-                    if (_controller.canGoToPreviousPeriod())
-                      IconButton(
-                        onPressed: _controller.goToPreviousPeriod,
-                        icon: const Icon(Icons.chevron_left),
-                        iconSize: 28,
-                      )
-                    else
-                      const SizedBox(width: 48), // Espace pour maintenir l'alignement
-                    Container(
-                      constraints: const BoxConstraints(minWidth: 120),
-                      child: Text(
-                        _controller.getPeriodLabel(),
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          fontWeight: FontWeight.w600,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                    ),
-                    if (_controller.canGoToNextPeriod())
-                      IconButton(
-                        onPressed: _controller.goToNextPeriod,
-                        icon: const Icon(Icons.chevron_right),
-                        iconSize: 28,
-                      )
-                    else
-                      const SizedBox(width: 48), // Espace pour maintenir l'alignement
-                  ],
-                ),
-              ],
+            Text(
+              'Répartition par catégorie',
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
             ),
             const SizedBox(height: 20),
             SizedBox(

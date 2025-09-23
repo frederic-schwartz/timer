@@ -81,6 +81,8 @@ class StatisticsController extends ChangeNotifier {
   }
 
   void goToPreviousPeriod() {
+    if (!canGoToPreviousPeriod()) return;
+
     DateTime newDate;
     switch (_selectedPeriod) {
       case TimePeriod.daily:
@@ -97,16 +99,16 @@ class StatisticsController extends ChangeNotifier {
         break;
     }
 
-    if (_hasDataForPeriod(newDate)) {
-      _currentPeriodDate = newDate;
-      _filterSessionsByPeriod();
-      _calculateCategoryStats();
-      _calculateTotals();
-      notifyListeners();
-    }
+    _currentPeriodDate = newDate;
+    _filterSessionsByPeriod();
+    _calculateCategoryStats();
+    _calculateTotals();
+    notifyListeners();
   }
 
   void goToNextPeriod() {
+    if (!canGoToNextPeriod()) return;
+
     DateTime newDate;
     switch (_selectedPeriod) {
       case TimePeriod.daily:
@@ -123,39 +125,20 @@ class StatisticsController extends ChangeNotifier {
         break;
     }
 
-    // Ne pas aller dans le futur au-delà d'aujourd'hui
-    final now = DateTime.now();
-    if (newDate.isBefore(now) || _isSamePeriod(newDate, now)) {
-      if (_hasDataForPeriod(newDate)) {
-        _currentPeriodDate = newDate;
-        _filterSessionsByPeriod();
-        _calculateCategoryStats();
-        _calculateTotals();
-        notifyListeners();
-      }
-    }
+    _currentPeriodDate = newDate;
+    _filterSessionsByPeriod();
+    _calculateCategoryStats();
+    _calculateTotals();
+    notifyListeners();
   }
 
   bool canGoToPreviousPeriod() {
-    DateTime newDate;
-    switch (_selectedPeriod) {
-      case TimePeriod.daily:
-        newDate = DateTime(_currentPeriodDate.year, _currentPeriodDate.month, _currentPeriodDate.day - 1);
-        break;
-      case TimePeriod.weekly:
-        newDate = DateTime(_currentPeriodDate.year, _currentPeriodDate.month, _currentPeriodDate.day - 7);
-        break;
-      case TimePeriod.monthly:
-        newDate = DateTime(_currentPeriodDate.year, _currentPeriodDate.month - 1, 1);
-        break;
-      case TimePeriod.yearly:
-        newDate = DateTime(_currentPeriodDate.year - 1, 1, 1);
-        break;
-    }
-    return _hasDataForPeriod(newDate);
+    // Toujours possible d'aller dans le passé
+    return true;
   }
 
   bool canGoToNextPeriod() {
+    // On peut naviguer vers le futur tant qu'on ne dépasse pas aujourd'hui
     DateTime newDate;
     switch (_selectedPeriod) {
       case TimePeriod.daily:
@@ -173,16 +156,9 @@ class StatisticsController extends ChangeNotifier {
     }
 
     final now = DateTime.now();
-    return (newDate.isBefore(now) || _isSamePeriod(newDate, now)) && _hasDataForPeriod(newDate);
+    return newDate.isBefore(now) || _isSamePeriod(newDate, now);
   }
 
-  bool _hasDataForPeriod(DateTime periodDate) {
-    final (startDate, endDate) = _getPeriodRange(periodDate);
-    return _allSessions.any((session) =>
-        (session.startedAt.isAfter(startDate) ||
-         session.startedAt.isAtSameMomentAs(startDate)) &&
-        session.startedAt.isBefore(endDate));
-  }
 
   bool _isSamePeriod(DateTime date1, DateTime date2) {
     switch (_selectedPeriod) {
