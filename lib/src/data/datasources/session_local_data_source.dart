@@ -23,7 +23,7 @@ class SessionLocalDataSource {
 
     return openDatabase(
       path,
-      version: 1,
+      version: 2,
       onCreate: _createDatabase,
       onUpgrade: _upgradeDatabase,
     );
@@ -41,11 +41,9 @@ class SessionLocalDataSource {
     await db.execute('''
       CREATE TABLE $_tableName (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        createdAt INTEGER NOT NULL,
-        updatedAt INTEGER NOT NULL,
-        totalDuration INTEGER DEFAULT 0,
-        totalPausedDuration INTEGER DEFAULT 0,
-        isRunning INTEGER DEFAULT 1,
+        startedAt INTEGER NOT NULL,
+        endedAt INTEGER,
+        totalPauseDuration INTEGER DEFAULT 0,
         isPaused INTEGER DEFAULT 0,
         categoryId INTEGER,
         label TEXT,
@@ -59,7 +57,10 @@ class SessionLocalDataSource {
   }
 
   Future<void> _upgradeDatabase(Database db, int oldVersion, int newVersion) async {
-    // No upgrades needed for version 1
+    if (oldVersion < 2) {
+      // Ajouter la colonne isPaused à la table existante
+      await db.execute('ALTER TABLE $_tableName ADD COLUMN isPaused INTEGER DEFAULT 0');
+    }
   }
 
   Future<int> insertSession(TimerSessionModel session) async {
@@ -73,10 +74,10 @@ class SessionLocalDataSource {
       SELECT s.*, c.name as category_name, c.color as category_color
       FROM $_tableName s
       LEFT JOIN categories c ON s.categoryId = c.id
-      WHERE s.isRunning = ?
-      ORDER BY s.updatedAt DESC
+      WHERE s.endedAt IS NULL
+      ORDER BY s.startedAt DESC
       LIMIT 1
-    ''', [1]);
+    ''');
 
     if (result.isNotEmpty) {
       final row = result.first;
@@ -113,7 +114,7 @@ class SessionLocalDataSource {
       SELECT s.*, c.name as category_name, c.color as category_color
       FROM $_tableName s
       LEFT JOIN categories c ON s.categoryId = c.id
-      ORDER BY s.updatedAt DESC
+      ORDER BY s.startedAt DESC
     ''');
 
     return result.map((row) {

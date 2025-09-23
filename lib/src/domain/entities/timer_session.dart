@@ -2,49 +2,55 @@ import 'category.dart';
 
 class TimerSession {
   final int? id;
-  final DateTime createdAt;
-  final DateTime updatedAt;
-  final int totalDuration; // in milliseconds - durée totale accumulée
-  final int totalPausedDuration; // in milliseconds
-  final bool isRunning;
+  final DateTime startedAt;
+  final DateTime? endedAt;
+  final int totalPauseDuration; // in milliseconds - durée totale de pause
   final bool isPaused;
   final Category? category;
   final String? label;
 
   const TimerSession({
     this.id,
-    required this.createdAt,
-    DateTime? updatedAt,
-    this.totalDuration = 0,
-    this.totalPausedDuration = 0,
-    this.isRunning = true,
+    required this.startedAt,
+    this.endedAt,
+    this.totalPauseDuration = 0,
     this.isPaused = false,
     this.category,
     this.label,
-  }) : updatedAt = updatedAt ?? createdAt;
+  });
 
-  Duration get currentDuration {
-    return Duration(milliseconds: totalDuration);
+  bool get isRunning => endedAt == null && !isPaused;
+
+  Duration get totalDuration {
+    final end = endedAt ?? DateTime.now();
+    final duration = end.difference(startedAt);
+    final pauseDuration = Duration(milliseconds: totalPauseDuration);
+    return duration - pauseDuration;
+  }
+
+  Duration get grossDuration {
+    final end = endedAt ?? DateTime.now();
+    return end.difference(startedAt);
+  }
+
+  Duration get pauseDuration {
+    return Duration(milliseconds: totalPauseDuration);
   }
 
   TimerSession copyWith({
     int? id,
-    DateTime? createdAt,
-    DateTime? updatedAt,
-    int? totalDuration,
-    int? totalPausedDuration,
-    bool? isRunning,
+    DateTime? startedAt,
+    DateTime? endedAt,
+    int? totalPauseDuration,
     bool? isPaused,
     Category? category,
     String? label,
   }) {
     return TimerSession(
       id: id ?? this.id,
-      createdAt: createdAt ?? this.createdAt,
-      updatedAt: updatedAt ?? this.updatedAt,
-      totalDuration: totalDuration ?? this.totalDuration,
-      totalPausedDuration: totalPausedDuration ?? this.totalPausedDuration,
-      isRunning: isRunning ?? this.isRunning,
+      startedAt: startedAt ?? this.startedAt,
+      endedAt: endedAt ?? this.endedAt,
+      totalPauseDuration: totalPauseDuration ?? this.totalPauseDuration,
       isPaused: isPaused ?? this.isPaused,
       category: category ?? this.category,
       label: label ?? this.label,

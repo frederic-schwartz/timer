@@ -46,12 +46,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
     return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
   }
 
-  Future<void> _resumeSession(TimerSession session) async {
-    await _controller.resumeSession(session);
-    if (mounted) {
-      Navigator.pop(context);
-    }
-  }
 
   Future<void> _deleteSession(TimerSession session) async {
     final confirmed = await showDialog<bool>(
@@ -154,10 +148,10 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                                   itemBuilder: (context, index) {
                                     final session = sessions[index];
-                                    final duration = session.currentDuration;
+                                    final duration = session.totalDuration;
 
                                     return GlassCard(
-                                      onTap: () => _resumeSession(session),
+                                      onTap: null,
                                       child: Row(
                                         crossAxisAlignment: CrossAxisAlignment.start,
                                         children: [
@@ -186,22 +180,22 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                                 ),
                                                 const SizedBox(height: 6),
                                                 Text(
-                                                  'Début: ${_formatDateTime(session.createdAt)}',
+                                                  'Début: ${_formatDateTime(session.startedAt)}',
                                                   style: theme.textTheme.bodyMedium?.copyWith(
                                                     color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                                                   ),
                                                 ),
-                                                if (!session.isRunning && !session.isPaused)
+                                                if (!session.isRunning)
                                                   Padding(
                                                     padding: const EdgeInsets.only(top: 4),
                                                     child: Text(
-                                                      'Fin: ${_formatDateTime(session.updatedAt)}',
+                                                      'Fin: ${_formatDateTime(session.endedAt ?? session.startedAt)}',
                                                       style: theme.textTheme.bodyMedium?.copyWith(
                                                         color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                                                       ),
                                                     ),
                                                   ),
-                                                if (session.totalPausedDuration > 0)
+                                                if (session.totalPauseDuration > 0)
                                                   Padding(
                                                     padding: const EdgeInsets.only(top: 6),
                                                     child: Row(
@@ -213,7 +207,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                                         ),
                                                         const SizedBox(width: 6),
                                                         Text(
-                                                          'Pause: ${_formatDuration(Duration(milliseconds: session.totalPausedDuration))}',
+                                                          'Pause: ${_formatDuration(Duration(milliseconds: session.totalPauseDuration))}',
                                                           style: theme.textTheme.bodySmall?.copyWith(
                                                             color: theme.colorScheme.secondary,
                                                             fontWeight: FontWeight.w600,
@@ -228,16 +222,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                           PopupMenuButton(
                                             itemBuilder: (context) => [
                                               PopupMenuItem(
-                                                value: 'resume',
-                                                child: const Row(
-                                                  children: [
-                                                    Icon(Icons.play_arrow),
-                                                    SizedBox(width: 8),
-                                                    Text('Reprendre'),
-                                                  ],
-                                                ),
-                                              ),
-                                              PopupMenuItem(
                                                 value: 'delete',
                                                 child: const Row(
                                                   children: [
@@ -249,9 +233,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                               ),
                                             ],
                                             onSelected: (value) {
-                                              if (value == 'resume') {
-                                                _resumeSession(session);
-                                              } else if (value == 'delete') {
+                                              if (value == 'delete') {
                                                 _deleteSession(session);
                                               }
                                             },

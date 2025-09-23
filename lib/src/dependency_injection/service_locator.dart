@@ -22,11 +22,11 @@ import '../domain/usecases/initialize_timer.dart';
 import '../domain/usecases/insert_category.dart';
 import '../domain/usecases/pause_timer.dart';
 import '../domain/usecases/reset_timer.dart';
-import '../domain/usecases/resume_session.dart';
 import '../domain/usecases/set_recent_sessions_count.dart';
 import '../domain/usecases/start_timer.dart';
 import '../domain/usecases/stop_timer.dart';
 import '../domain/usecases/update_category.dart';
+import '../domain/usecases/update_current_session.dart';
 import '../domain/usecases/watch_timer_duration.dart';
 import '../domain/usecases/watch_timer_state.dart';
 
@@ -52,7 +52,7 @@ class AppDependencies {
   late final PauseTimer pauseTimer;
   late final StopTimer stopTimer;
   late final ResetTimer resetTimer;
-  late final ResumeSession resumeSession;
+  late final UpdateCurrentSession updateCurrentSession;
   late final WatchTimerDuration watchTimerDuration;
   late final WatchTimerState watchTimerState;
   late final GetTimerSnapshot getTimerSnapshot;
@@ -86,7 +86,7 @@ class AppDependencies {
     pauseTimer = PauseTimer(timerRepository);
     stopTimer = StopTimer(timerRepository);
     resetTimer = ResetTimer(timerRepository);
-    resumeSession = ResumeSession(timerRepository);
+    updateCurrentSession = UpdateCurrentSession(timerRepository);
     watchTimerDuration = WatchTimerDuration(timerRepository);
     watchTimerState = WatchTimerState(timerRepository);
     getTimerSnapshot = GetTimerSnapshot(timerRepository);

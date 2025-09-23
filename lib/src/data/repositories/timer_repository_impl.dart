@@ -4,7 +4,6 @@ import '../../domain/entities/timer_snapshot.dart';
 import '../../domain/entities/timer_state.dart';
 import '../../domain/repositories/timer_repository.dart';
 import '../datasources/timer_local_data_source.dart';
-import '../models/timer_session_model.dart';
 
 class TimerRepositoryImpl implements TimerRepository {
   TimerRepositoryImpl(this._timerLocalDataSource);
@@ -24,15 +23,6 @@ class TimerRepositoryImpl implements TimerRepository {
   TimerState get currentState => _timerLocalDataSource.currentState;
 
   @override
-  Duration get currentPauseDuration => _timerLocalDataSource.currentPauseDuration;
-
-  @override
-  Duration get totalPausedDuration => _timerLocalDataSource.totalPausedDuration;
-
-  @override
-  Duration get totalPausedDurationRealTime => _timerLocalDataSource.totalPausedDurationRealTime;
-
-  @override
   Future<void> initialize() => _timerLocalDataSource.initialize();
 
   @override
@@ -49,10 +39,19 @@ class TimerRepositoryImpl implements TimerRepository {
   Future<void> reset() => _timerLocalDataSource.reset();
 
   @override
-  Future<void> resumeSession(TimerSession session) {
-    final model = TimerSessionModel.fromEntity(session);
-    return _timerLocalDataSource.resumeSession(model);
-  }
+  Future<void> updateCurrentSession({
+    DateTime? startedAt,
+    DateTime? endedAt,
+    int? totalPauseDuration,
+    Category? category,
+    String? label,
+  }) => _timerLocalDataSource.updateCurrentSession(
+        startedAt: startedAt,
+        endedAt: endedAt,
+        totalPauseDuration: totalPauseDuration,
+        category: category,
+        label: label,
+      );
 
   @override
   TimerSnapshot snapshot() {
@@ -70,10 +69,6 @@ class TimerRepositoryImpl implements TimerRepository {
     final sessionModel = _timerLocalDataSource.currentSession;
     return sessionModel;
   }
-
-  @override
-  Future<void> updateCurrentSessionCategoryLabel(Category? category, String? label) =>
-      _timerLocalDataSource.updateCurrentSessionCategoryLabel(category, label);
 
   @override
   void dispose() {

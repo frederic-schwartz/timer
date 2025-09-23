@@ -94,19 +94,12 @@ class HomeController extends ChangeNotifier {
     _updateSnapshot();
   }
 
+
   Future<void> stopTimer() async {
     await _dependencies.stopTimer();
     _updateSnapshot();
   }
 
-  Future<void> resumeSession(TimerSession session) async {
-    await _dependencies.resumeSession(session);
-    // Récupérer la catégorie et le libellé de la session reprise
-    _selectedCategory = session.category;
-    _selectedLabel = session.label;
-    _updateSnapshot();
-    notifyListeners();
-  }
 
   Future<void> resetTimer() async {
     await _dependencies.resetTimer();
@@ -136,9 +129,9 @@ class HomeController extends ChangeNotifier {
 
   Future<void> _updateCurrentSessionCategoryLabel() async {
     try {
-      await _dependencies.timerRepository.updateCurrentSessionCategoryLabel(
-        _selectedCategory,
-        _selectedLabel,
+      await _dependencies.updateCurrentSession(
+        category: _selectedCategory,
+        label: _selectedLabel,
       );
       // Recharger la liste des sessions pour refléter les changements
       await loadRecentSessions();

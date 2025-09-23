@@ -11,9 +11,6 @@ abstract class TimerRepository {
 
   Duration get currentDuration;
   TimerState get currentState;
-  Duration get totalPausedDuration;
-  Duration get totalPausedDurationRealTime;
-  Duration get currentPauseDuration;
 
   TimerSnapshot snapshot();
   TimerSession? get currentSession;
@@ -23,7 +20,12 @@ abstract class TimerRepository {
   Future<void> pauseTimer();
   Future<void> stopTimer();
   Future<void> reset();
-  Future<void> resumeSession(TimerSession session);
-  Future<void> updateCurrentSessionCategoryLabel(Category? category, String? label);
+  Future<void> updateCurrentSession({
+    DateTime? startedAt,
+    DateTime? endedAt,
+    int? totalPauseDuration,
+    Category? category,
+    String? label,
+  });
   void dispose();
 }

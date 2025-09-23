@@ -66,6 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     await _controller.pauseTimer();
   }
 
+
   Future<void> _stopTimer() async {
     await _controller.stopTimer();
   }
@@ -306,11 +307,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   ],
                 ),
               ),
-              if (state == TimerState.paused && _controller.totalPauseRealTime > _controller.currentPauseDuration) ...[
+              if (state == TimerState.paused && _controller.totalPause > Duration.zero) ...[
                 const SizedBox(width: 8),
                 Container(
-                  width: 100,
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 6),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.secondary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -435,14 +435,14 @@ class _HomeScreenState extends State<HomeScreen> {
         const SizedBox(width: 16),
         Expanded(
           child: FilledButton.icon(
-            onPressed: (state == TimerState.ready || isFinished)
+            onPressed: (state == TimerState.finished)
                 ? _resetTimer
-                : (state != TimerState.stopped ? _stopTimer : null),
+                : (isRunning || isPaused ? _stopTimer : null),
             icon: Icon(
-              (state == TimerState.ready || isFinished) ? Icons.refresh_rounded : Icons.stop_rounded,
+              isFinished ? Icons.refresh_rounded : Icons.stop_rounded,
               size: 26
             ),
-            label: Text((state == TimerState.ready || isFinished) ? 'Reset' : 'Stop'),
+            label: Text(isFinished ? 'Reset' : 'Arrêter'),
             style: FilledButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 18),
               textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
@@ -497,11 +497,11 @@ class _HomeScreenState extends State<HomeScreen> {
             padding: EdgeInsets.only(bottom: index == sessions.length - 1 ? 0 : 12),
             child: _RecentSessionCard(
               session: session,
-              onResume: () => _controller.resumeSession(session),
-              durationLabel: _formatDuration(session.currentDuration),
-              startLabel: _formatDateTime(session.createdAt),
-              pauseLabel: session.totalPausedDuration > 0
-                  ? _formatDuration(Duration(milliseconds: session.totalPausedDuration))
+              onResume: null,
+              durationLabel: _formatDuration(session.totalDuration),
+              startLabel: _formatDateTime(session.startedAt),
+              pauseLabel: session.totalPauseDuration > 0
+                  ? _formatDuration(Duration(milliseconds: session.totalPauseDuration))
                   : null,
             ),
           );
@@ -616,14 +616,14 @@ class _StateBadge extends StatelessWidget {
 class _RecentSessionCard extends StatelessWidget {
   const _RecentSessionCard({
     required this.session,
-    required this.onResume,
+    this.onResume,
     required this.durationLabel,
     required this.startLabel,
     this.pauseLabel,
   });
 
   final TimerSession session;
-  final VoidCallback onResume;
+  final VoidCallback? onResume;
   final String durationLabel;
   final String startLabel;
   final String? pauseLabel;
@@ -686,11 +686,11 @@ class _RecentSessionCard extends StatelessWidget {
                           color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                         ),
                       ),
-                      if (!session.isRunning && !session.isPaused)
+                      if (!session.isRunning)
                         Padding(
                           padding: const EdgeInsets.only(top: 4),
                           child: Text(
-                            'Fin: ${_formatEndDate(session.updatedAt)}',
+                            'Fin: ${_formatEndDate(session.endedAt ?? session.startedAt)}',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
                             ),
@@ -794,7 +794,7 @@ class _RecentSessionCard extends StatelessWidget {
     );
   }
 
-  String _formatEndDate(DateTime updatedAt) {
-    return '${updatedAt.day.toString().padLeft(2, '0')}/${updatedAt.month.toString().padLeft(2, '0')} ${updatedAt.hour.toString().padLeft(2, '0')}:${updatedAt.minute.toString().padLeft(2, '0')}';
+  String _formatEndDate(DateTime endedAt) {
+    return '${endedAt.day.toString().padLeft(2, '0')}/${endedAt.month.toString().padLeft(2, '0')} ${endedAt.hour.toString().padLeft(2, '0')}:${endedAt.minute.toString().padLeft(2, '0')}';
   }
 }

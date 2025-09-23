@@ -30,9 +30,6 @@ class SessionsController extends ChangeNotifier {
     notifyListeners();
   }
 
-  Future<void> resumeSession(TimerSession session) async {
-    await _dependencies.resumeSession(session);
-  }
 
   Future<void> deleteSession(TimerSession session) async {
     final id = session.id;
