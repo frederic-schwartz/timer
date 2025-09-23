@@ -20,6 +20,7 @@ class TimerLocalDataSource {
   Timer? _timer;
   DateTime? _pauseStartTime;
   DateTime? _sessionStartTime; // Quand la session actuelle a commencé
+  bool _isJustFinished = false; // Pour différencier finished de ready
 
   final StreamController<Duration> _durationController = StreamController<Duration>.broadcast();
   final StreamController<TimerState> _stateController = StreamController<TimerState>.broadcast();
@@ -33,9 +34,10 @@ class TimerLocalDataSource {
     if (_currentSession == null) return TimerState.stopped;
     if (_currentSession!.isPaused) return TimerState.paused;
     if (_currentSession!.isRunning) return TimerState.running;
-    // Si on a une session mais pas en cours, c'est soit ready soit finished
-    if (_sessionStartTime == null) return TimerState.ready;
-    return TimerState.finished;
+    // Si session vient d'être stoppée, elle est finished
+    if (_isJustFinished) return TimerState.finished;
+    // Sinon elle est prête à être reprise
+    return TimerState.ready;
   }
 
   Duration get currentDuration {
@@ -151,6 +153,7 @@ class TimerLocalDataSource {
       final id = await _sessionLocalDataSource.insertSession(session);
       _currentSession = session.copyWithModel(id: id);
       _sessionStartTime = now;
+      _isJustFinished = false;
 
       _durationController.add(Duration.zero);
     }
@@ -180,6 +183,7 @@ class TimerLocalDataSource {
         label: label ?? _currentSession!.label,
       );
       _sessionStartTime = now;
+      _isJustFinished = false; // Plus finished une fois redémarrée
       await _sessionLocalDataSource.updateSession(_currentSession!);
     }
 
@@ -237,6 +241,7 @@ class TimerLocalDataSource {
       await _sessionLocalDataSource.updateSession(_currentSession!);
 
       _sessionStartTime = null;
+      _isJustFinished = true; // Marquer comme venant d'être terminée
       _stateController.add(TimerState.finished);
       _durationController.add(_currentSession!.currentDuration);
 
@@ -256,6 +261,7 @@ class TimerLocalDataSource {
 
     _sessionStartTime = null; // Sera défini quand on démarrera
     _pauseStartTime = null;
+    _isJustFinished = false; // Session reprise, pas finished
 
     _stateController.add(TimerState.ready);
     _durationController.add(session.currentDuration);
@@ -268,6 +274,7 @@ class TimerLocalDataSource {
     _currentSession = null;
     _pauseStartTime = null;
     _sessionStartTime = null;
+    _isJustFinished = false;
 
     await _clearState();
 
