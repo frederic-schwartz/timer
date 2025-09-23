@@ -235,6 +235,7 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                             ),
                                           ),
                                           PopupMenuButton(
+                                            icon: const Icon(Icons.more_vert),
                                             itemBuilder: (context) => [
                                               PopupMenuItem(
                                                 value: 'edit',

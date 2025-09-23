@@ -87,27 +87,16 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         child: SafeArea(
           child: _controller.isLoading
               ? const Center(child: CircularProgressIndicator())
-              : Padding(
+              : SingleChildScrollView(
                   padding: const EdgeInsets.all(16.0),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       _buildPeriodSelector(theme),
                       const SizedBox(height: 20),
-                      _buildSummaryCards(theme),
+                      _buildChart(theme),
                       const SizedBox(height: 20),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _buildChart(theme),
-                              const SizedBox(height: 20),
-                              _buildCategoryList(theme),
-                            ],
-                          ),
-                        ),
-                      ),
+                      _buildCategoryList(theme),
                     ],
                   ),
                 ),
@@ -117,135 +106,88 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildPeriodSelector(ThemeData theme) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              'Période',
-              style: theme.textTheme.titleMedium?.copyWith(
-                fontWeight: FontWeight.w600,
+    return SizedBox(
+      width: double.infinity,
+      child: Card(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Période',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.w600,
+                ),
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 8,
-              children: TimePeriod.values.map((period) {
-                final isSelected = _controller.selectedPeriod == period;
-                String label;
-                switch (period) {
-                  case TimePeriod.daily:
-                    label = 'Jour';
-                    break;
-                  case TimePeriod.weekly:
-                    label = 'Semaine';
-                    break;
-                  case TimePeriod.monthly:
-                    label = 'Mois';
-                    break;
-                  case TimePeriod.yearly:
-                    label = 'Année';
-                    break;
-                }
-
-                return FilterChip(
-                  label: Text(label),
-                  selected: isSelected,
-                  onSelected: (_) => _controller.setPeriod(period),
-                  selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
-                  checkmarkColor: theme.colorScheme.primary,
-                );
-              }).toList(),
-            ),
-          ],
+              const SizedBox(height: 12),
+              Column(
+                children: [
+                  // Première ligne : Jour et Semaine
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPeriodButton(theme, TimePeriod.daily, 'Jour'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPeriodButton(theme, TimePeriod.weekly, 'Semaine'),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  // Deuxième ligne : Mois et Année
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _buildPeriodButton(theme, TimePeriod.monthly, 'Mois'),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: _buildPeriodButton(theme, TimePeriod.yearly, 'Année'),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildSummaryCards(ThemeData theme) {
-    return Row(
-      children: [
-        Expanded(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.timer_outlined,
-                        color: theme.colorScheme.primary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Temps actif',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _formatDuration(_controller.totalDuration),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.primary,
-                    ),
-                  ),
-                ],
-              ),
+  Widget _buildPeriodButton(ThemeData theme, TimePeriod period, String label) {
+    final isSelected = _controller.selectedPeriod == period;
+
+    return SizedBox(
+      height: 48, // Hauteur fixe pour tous les boutons
+      child: FilterChip(
+        label: SizedBox(
+          width: double.infinity,
+          child: Text(
+            label,
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
             ),
           ),
         ),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Card(
-            child: Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.pause_circle_outlined,
-                        color: theme.colorScheme.secondary,
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: Text(
-                          'Temps de pause',
-                          style: theme.textTheme.bodyMedium?.copyWith(
-                            color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                          ),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    _formatDuration(_controller.totalPauseDuration),
-                    style: theme.textTheme.titleLarge?.copyWith(
-                      fontWeight: FontWeight.w700,
-                      color: theme.colorScheme.secondary,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ),
+        selected: isSelected,
+        onSelected: (_) => _controller.setPeriod(period),
+        selectedColor: theme.colorScheme.primary.withValues(alpha: 0.2),
+        checkmarkColor: theme.colorScheme.primary,
+        backgroundColor: theme.colorScheme.surface,
+        side: BorderSide(
+          color: isSelected
+              ? theme.colorScheme.primary
+              : theme.colorScheme.outline.withValues(alpha: 0.3),
+          width: isSelected ? 2 : 1,
         ),
-      ],
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
     );
   }
 
