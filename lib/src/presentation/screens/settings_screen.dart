@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../../domain/entities/category.dart';
 import '../controllers/settings_controller.dart';
+import '../widgets/category_edit_dialog.dart';
 import '../widgets/glass_card.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -50,9 +52,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           ),
           TextButton(
             onPressed: () => Navigator.pop(context, true),
-            style: TextButton.styleFrom(
-              foregroundColor: Colors.red,
-            ),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
             child: const Text('Supprimer tout'),
           ),
         ],
@@ -80,6 +80,55 @@ class _SettingsScreenState extends State<SettingsScreen> {
           );
         }
       }
+    }
+  }
+
+  Future<void> _showCategoryDialog(BuildContext context, {Category? category}) async {
+    final result = await showDialog<Map<String, dynamic>>(
+      context: context,
+      builder: (context) => CategoryEditDialog(category: category),
+    );
+
+    if (result != null) {
+      if (category != null) {
+        // Modifier une catégorie existante
+        final updatedCategory = category.copyWith(
+          name: result['name'],
+          color: result['color'],
+        );
+        await _controller.updateCategory(updatedCategory);
+      } else {
+        // Créer une nouvelle catégorie
+        await _controller.addCategory(result['name'], result['color']);
+      }
+    }
+  }
+
+  Future<void> _deleteCategory(BuildContext context, Category category) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('Supprimer la catégorie'),
+        content: Text(
+          'Êtes-vous sûr de vouloir supprimer la catégorie "${category.name}" ?\n\n'
+          'Les sessions utilisant cette catégorie n\'auront plus de catégorie associée.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Annuler'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            style: TextButton.styleFrom(foregroundColor: Colors.red),
+            child: const Text('Supprimer'),
+          ),
+        ],
+      ),
+    );
+
+    if (confirmed == true && category.id != null) {
+      await _controller.deleteCategory(category.id!);
     }
   }
 
@@ -119,12 +168,17 @@ class _SettingsScreenState extends State<SettingsScreen> {
                       'Personnalisez votre expérience',
                       style: theme.textTheme.titleLarge?.copyWith(
                         fontWeight: FontWeight.w700,
-                        color: theme.colorScheme.onSurface.withValues(alpha: 0.85),
+                        color: theme.colorScheme.onSurface.withValues(
+                          alpha: 0.85,
+                        ),
                       ),
                     ),
                     const SizedBox(height: 20),
                     GlassCard(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -141,7 +195,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.primary.withValues(alpha: 0.15),
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Icon(
@@ -150,13 +206,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             title: const Text('Sessions récentes'),
-                            subtitle: Text('Afficher $count sessions sur l\'écran principal'),
+                            subtitle: Text(
+                              'Afficher $count sessions sur l\'écran principal',
+                            ),
                             trailing: Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
                                 IconButton(
-                                  onPressed: count > SettingsController.minRecentSessions
-                                      ? () => _controller.decreaseRecentSessions()
+                                  onPressed:
+                                      count >
+                                          SettingsController.minRecentSessions
+                                      ? () =>
+                                            _controller.decreaseRecentSessions()
                                       : null,
                                   icon: const Icon(Icons.remove),
                                 ),
@@ -167,8 +228,11 @@ class _SettingsScreenState extends State<SettingsScreen> {
                                   ),
                                 ),
                                 IconButton(
-                                  onPressed: count < SettingsController.maxRecentSessions
-                                      ? () => _controller.increaseRecentSessions()
+                                  onPressed:
+                                      count <
+                                          SettingsController.maxRecentSessions
+                                      ? () =>
+                                            _controller.increaseRecentSessions()
                                       : null,
                                   icon: const Icon(Icons.add),
                                 ),
@@ -180,7 +244,84 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     ),
                     const SizedBox(height: 16),
                     GlassCard(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                'Catégories',
+                                style: theme.textTheme.titleMedium?.copyWith(
+                                  fontWeight: FontWeight.w700,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              IconButton(
+                                onPressed: () => _showCategoryDialog(context),
+                                icon: const Icon(Icons.add),
+                                tooltip: 'Ajouter une catégorie',
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 12),
+                          if (_controller.categories.isEmpty)
+                            const Padding(
+                              padding: EdgeInsets.symmetric(vertical: 16),
+                              child: Center(
+                                child: Text('Aucune catégorie'),
+                              ),
+                            )
+                          else
+                            ...(_controller.categories.map((category) => ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: Color(int.parse(category.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.15),
+                                  borderRadius: BorderRadius.circular(16),
+                                  border: Border.all(
+                                    color: Color(int.parse(category.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.3),
+                                    width: 1,
+                                  ),
+                                ),
+                                child: Icon(
+                                  Icons.label,
+                                  color: Color(int.parse(category.color.substring(1), radix: 16) + 0xFF000000),
+                                ),
+                              ),
+                              title: Text(category.name),
+                              trailing: Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  IconButton(
+                                    onPressed: () => _showCategoryDialog(context, category: category),
+                                    icon: const Icon(Icons.edit),
+                                    tooltip: 'Modifier',
+                                  ),
+                                  IconButton(
+                                    onPressed: () => _deleteCategory(context, category),
+                                    icon: const Icon(Icons.delete),
+                                    color: theme.colorScheme.error,
+                                    tooltip: 'Supprimer',
+                                  ),
+                                ],
+                              ),
+                            ))),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GlassCard(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 20,
+                        vertical: 16,
+                      ),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -197,7 +338,9 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             leading: Container(
                               padding: const EdgeInsets.all(10),
                               decoration: BoxDecoration(
-                                color: theme.colorScheme.error.withValues(alpha: 0.15),
+                                color: theme.colorScheme.error.withValues(
+                                  alpha: 0.15,
+                                ),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: Icon(
@@ -206,37 +349,10 @@ class _SettingsScreenState extends State<SettingsScreen> {
                               ),
                             ),
                             title: const Text('Supprimer tout l\'historique'),
-                            subtitle: const Text('Efface toutes les sessions terminées'),
-                            onTap: () => _clearAllSessions(context),
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                    GlassCard(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Informations',
-                            style: theme.textTheme.titleMedium?.copyWith(
-                              fontWeight: FontWeight.w700,
-                              color: theme.colorScheme.primary,
+                            subtitle: const Text(
+                              'Efface toutes les sessions terminées',
                             ),
-                          ),
-                          const SizedBox(height: 12),
-                          const ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(Icons.info_outline),
-                            title: Text('Version'),
-                            subtitle: Text('1.0.0'),
-                          ),
-                          const ListTile(
-                            contentPadding: EdgeInsets.zero,
-                            leading: Icon(Icons.developer_mode),
-                            title: Text('Technologie'),
-                            subtitle: Text('Flutter / Dart'),
+                            onTap: () => _clearAllSessions(context),
                           ),
                         ],
                       ),
