@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import '../../domain/entities/timer_session.dart';
 import '../../domain/entities/category.dart' as entities;
 import '../controllers/sessions_controller.dart';
-import '../widgets/glass_card.dart';
+import '../widgets/session_card.dart';
 import 'edit_session_screen.dart';
 
 class SessionsScreen extends StatefulWidget {
@@ -37,16 +37,6 @@ class _SessionsScreenState extends State<SessionsScreen> {
     super.dispose();
   }
 
-  String _formatDuration(Duration duration) {
-    final hours = duration.inHours;
-    final minutes = duration.inMinutes.remainder(60);
-    final seconds = duration.inSeconds.remainder(60);
-    return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
-  }
-
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')}/${dateTime.year} à ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
-  }
 
   Future<void> _editSession(TimerSession session) async {
     final result = await Navigator.push<bool>(
@@ -192,111 +182,11 @@ class _SessionsScreenState extends State<SessionsScreen> {
                                   separatorBuilder: (_, __) => const SizedBox(height: 12),
                                   itemBuilder: (context, index) {
                                     final session = sessions[index];
-                                    final duration = session.totalDuration;
 
-                                    return GlassCard(
-                                      onTap: null,
-                                      child: Row(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
-                                        children: [
-                                          Container(
-                                            padding: const EdgeInsets.all(14),
-                                            decoration: BoxDecoration(
-                                              color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                                              borderRadius: BorderRadius.circular(18),
-                                            ),
-                                            child: Icon(
-                                              Icons.timer_rounded,
-                                              color: theme.colorScheme.primary,
-                                              size: 28,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 16),
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment: CrossAxisAlignment.start,
-                                              children: [
-                                                Text(
-                                                  _formatDuration(duration),
-                                                  style: theme.textTheme.titleMedium?.copyWith(
-                                                    fontWeight: FontWeight.w700,
-                                                  ),
-                                                ),
-                                                const SizedBox(height: 6),
-                                                Text(
-                                                  'Début: ${_formatDateTime(session.startedAt)}',
-                                                  style: theme.textTheme.bodyMedium?.copyWith(
-                                                    color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                                  ),
-                                                ),
-                                                if (!session.isRunning)
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(top: 4),
-                                                    child: Text(
-                                                      'Fin: ${_formatDateTime(session.endedAt ?? session.startedAt)}',
-                                                      style: theme.textTheme.bodyMedium?.copyWith(
-                                                        color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                                                      ),
-                                                    ),
-                                                  ),
-                                                if (session.totalPauseDuration > 0)
-                                                  Padding(
-                                                    padding: const EdgeInsets.only(top: 6),
-                                                    child: Row(
-                                                      children: [
-                                                        Icon(
-                                                          Icons.pause_circle_filled,
-                                                          color: theme.colorScheme.secondary,
-                                                          size: 18,
-                                                        ),
-                                                        const SizedBox(width: 6),
-                                                        Text(
-                                                          'Pause: ${_formatDuration(Duration(milliseconds: session.totalPauseDuration))}',
-                                                          style: theme.textTheme.bodySmall?.copyWith(
-                                                            color: theme.colorScheme.secondary,
-                                                            fontWeight: FontWeight.w600,
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
-                                              ],
-                                            ),
-                                          ),
-                                          PopupMenuButton(
-                                            icon: const Icon(Icons.more_vert),
-                                            itemBuilder: (context) => [
-                                              PopupMenuItem(
-                                                value: 'edit',
-                                                child: const Row(
-                                                  children: [
-                                                    Icon(Icons.edit_outlined),
-                                                    SizedBox(width: 8),
-                                                    Text('Modifier'),
-                                                  ],
-                                                ),
-                                              ),
-                                              PopupMenuItem(
-                                                value: 'delete',
-                                                child: const Row(
-                                                  children: [
-                                                    Icon(Icons.delete, color: Colors.red),
-                                                    SizedBox(width: 8),
-                                                    Text('Supprimer'),
-                                                  ],
-                                                ),
-                                              ),
-                                            ],
-                                            onSelected: (value) {
-                                              if (value == 'edit') {
-                                                _editSession(session);
-                                              } else if (value == 'delete') {
-                                                _deleteSession(session);
-                                              }
-                                            },
-                                          ),
-                                        ],
-                                      ),
+                                    return SessionCard(
+                                      session: session,
+                                      onEdit: () => _editSession(session),
+                                      onDelete: () => _deleteSession(session),
                                     );
                                   },
                                 ),
@@ -453,7 +343,7 @@ class _FilterDialogState extends State<_FilterDialog> {
                 border: OutlineInputBorder(),
                 contentPadding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
               ),
-              value: _tempSelectedCategory,
+              initialValue: _tempSelectedCategory,
               items: [
                 const DropdownMenuItem<entities.Category?>(
                   value: null,
