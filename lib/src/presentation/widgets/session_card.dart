@@ -55,96 +55,90 @@ class SessionCard extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 6),
-                      Text(
-                        _formatDuration(session.totalDuration),
-                        style: theme.textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.w700,
-                        ),
-                      ),
-                      if (session.totalPauseDuration > 0)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 6),
-                          child: Row(
-                            children: [
-                              Icon(
-                                Icons.pause_circle_filled,
-                                color: theme.colorScheme.secondary,
-                                size: 20,
-                              ),
-                              const SizedBox(width: 6),
-                              Text(
-                                'Pause: ${_formatDuration(Duration(milliseconds: session.totalPauseDuration))}',
-                                style: theme.textTheme.bodySmall?.copyWith(
-                                  color: theme.colorScheme.secondary,
-                                  fontWeight: FontWeight.w600,
-                                ),
-                              ),
-                            ],
+                      Row(
+                        children: [
+                          Text(
+                            _formatDuration(session.totalDuration),
+                            style: theme.textTheme.titleLarge?.copyWith(
+                              fontWeight: FontWeight.w700,
+                            ),
                           ),
-                        ),
-                      if (session.category != null || (session.label != null && session.label!.isNotEmpty))
+                          const Spacer(),
+                          if (session.totalPauseDuration > 0) ...[
+                            Icon(
+                              Icons.pause_circle_filled,
+                              color: theme.colorScheme.secondary,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              _formatDuration(Duration(milliseconds: session.totalPauseDuration)),
+                              style: theme.textTheme.bodyMedium?.copyWith(
+                                color: theme.colorScheme.secondary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                      if (session.category != null)
                         Padding(
                           padding: const EdgeInsets.only(top: 8),
-                          child: Row(
-                            children: [
-                              if (session.category != null) ...[
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.3),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                  width: 6,
+                                  height: 6,
                                   decoration: BoxDecoration(
-                                    color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.15),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000).withValues(alpha: 0.3),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Container(
-                                        width: 6,
-                                        height: 6,
-                                        decoration: BoxDecoration(
-                                          color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000),
-                                          shape: BoxShape.circle,
-                                        ),
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        session.category!.name,
-                                        style: theme.textTheme.bodySmall?.copyWith(
-                                          fontSize: 11,
-                                          fontWeight: FontWeight.w500,
-                                          color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000),
-                                        ),
-                                      ),
-                                    ],
+                                    color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000),
+                                    shape: BoxShape.circle,
                                   ),
                                 ),
-                                if (session.label != null && session.label!.isNotEmpty) const SizedBox(width: 6),
-                              ],
-                              if (session.label != null && session.label!.isNotEmpty) ...[
-                                Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                  decoration: BoxDecoration(
-                                    color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
-                                    borderRadius: BorderRadius.circular(12),
-                                    border: Border.all(
-                                      color: theme.colorScheme.outline.withValues(alpha: 0.2),
-                                      width: 1,
-                                    ),
-                                  ),
-                                  child: Text(
-                                    session.label!,
-                                    style: theme.textTheme.bodySmall?.copyWith(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w500,
-                                      color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
-                                    ),
+                                const SizedBox(width: 4),
+                                Text(
+                                  session.category!.name,
+                                  style: theme.textTheme.bodySmall?.copyWith(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w500,
+                                    color: Color(int.parse(session.category!.color.substring(1), radix: 16) + 0xFF000000),
                                   ),
                                 ),
                               ],
-                            ],
+                            ),
+                          ),
+                        ),
+                      if (session.label != null && session.label!.isNotEmpty)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            decoration: BoxDecoration(
+                              color: theme.colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: theme.colorScheme.outline.withValues(alpha: 0.2),
+                                width: 1,
+                              ),
+                            ),
+                            child: Text(
+                              session.label!,
+                              style: theme.textTheme.bodySmall?.copyWith(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w500,
+                                color: theme.colorScheme.onSurface.withValues(alpha: 0.8),
+                              ),
+                            ),
                           ),
                         ),
                     ],
