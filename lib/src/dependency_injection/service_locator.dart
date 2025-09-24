@@ -1,3 +1,4 @@
+import '../core/backup/icloud_backup_service.dart';
 import '../data/datasources/category_local_data_source.dart';
 import '../data/datasources/session_local_data_source.dart';
 import '../data/datasources/settings_local_data_source.dart';
@@ -10,6 +11,7 @@ import '../domain/repositories/category_repository.dart';
 import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/settings_repository.dart';
 import '../domain/repositories/timer_repository.dart';
+import '../domain/usecases/backup_app_data.dart';
 import '../domain/usecases/clear_completed_sessions.dart';
 import '../domain/usecases/delete_category.dart';
 import '../domain/usecases/delete_session.dart';
@@ -42,6 +44,7 @@ class AppDependencies {
   late final SessionLocalDataSource _sessionLocalDataSource;
   late final TimerLocalDataSource _timerLocalDataSource;
   late final SettingsLocalDataSource _settingsLocalDataSource;
+  late final ICloudBackupService _icloudBackupService;
 
   late final CategoryRepository categoryRepository;
   late final SessionRepository sessionRepository;
@@ -71,12 +74,14 @@ class AppDependencies {
   late final UpdateCategory updateCategory;
   late final DeleteCategory deleteCategory;
   late final GetCategoryById getCategoryById;
+  late final BackupAppData backupAppData;
 
   void _configure() {
     _categoryLocalDataSource = CategoryLocalDataSource();
     _sessionLocalDataSource = SessionLocalDataSource();
     _settingsLocalDataSource = SettingsLocalDataSource();
     _timerLocalDataSource = TimerLocalDataSource(_sessionLocalDataSource);
+    _icloudBackupService = ICloudBackupService();
 
     categoryRepository = CategoryRepositoryImpl(_categoryLocalDataSource);
     sessionRepository = SessionRepositoryImpl(_sessionLocalDataSource);
@@ -106,6 +111,13 @@ class AppDependencies {
     updateCategory = UpdateCategory(categoryRepository);
     deleteCategory = DeleteCategory(categoryRepository);
     getCategoryById = GetCategoryById(categoryRepository);
+
+    backupAppData = BackupAppData(
+      sessionRepository,
+      categoryRepository,
+      settingsRepository,
+      _icloudBackupService,
+    );
   }
 
   void dispose() {

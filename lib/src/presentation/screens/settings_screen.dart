@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'dart:io' show Platform;
+
+import 'package:flutter/services.dart';
 
 import '../../domain/entities/category.dart';
 import '../controllers/settings_controller.dart';
@@ -14,6 +17,7 @@ class SettingsScreen extends StatefulWidget {
 
 class _SettingsScreenState extends State<SettingsScreen> {
   late final SettingsController _controller;
+  bool _isBackingUp = false;
 
   @override
   void initState() {
@@ -132,6 +136,46 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  Future<void> _backupToICloud(BuildContext context) async {
+    if (_isBackingUp) return;
+
+    setState(() {
+      _isBackingUp = true;
+    });
+
+    try {
+      await _controller.backupToICloud();
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sauvegarde iCloud effectuée'),
+            backgroundColor: Colors.green,
+          ),
+        );
+      }
+    } catch (error) {
+      if (context.mounted) {
+        final message = switch (error) {
+          PlatformException e => e.message ?? 'Sauvegarde iCloud indisponible.',
+          MissingPluginException _ => 'Sauvegarde iCloud indisponible sur cet appareil.',
+          _ => 'Sauvegarde impossible.',
+        };
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isBackingUp = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final count = _controller.recentSessionsCount;
@@ -190,6 +234,37 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          if (Platform.isIOS) ...[
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: theme.colorScheme.primary.withValues(
+                                    alpha: 0.15,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Icon(
+                                  Icons.cloud_upload,
+                                  color: theme.colorScheme.primary,
+                                ),
+                              ),
+                              title: const Text('Sauvegarder sur iCloud'),
+                              subtitle: const Text(
+                                'Exporte vos sessions et catégories',
+                              ),
+                              trailing: _isBackingUp
+                                  ? const SizedBox(
+                                      width: 20,
+                                      height: 20,
+                                      child: CircularProgressIndicator(strokeWidth: 2),
+                                    )
+                                  : null,
+                              onTap: _isBackingUp ? null : () => _backupToICloud(context),
+                            ),
+                            const SizedBox(height: 12),
+                          ],
                           ListTile(
                             contentPadding: EdgeInsets.zero,
                             leading: Container(

@@ -49,6 +49,10 @@ class SettingsController extends ChangeNotifier {
     await _dependencies.clearCompletedSessions();
   }
 
+  Future<void> backupToICloud() async {
+    await _dependencies.backupAppData();
+  }
+
   Future<void> _loadCategories() async {
     try {
       _categories = await _dependencies.getAllCategories();
