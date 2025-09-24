@@ -44,46 +44,23 @@ class SessionCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(18),
-                  ),
-                  child: Icon(
-                    Icons.timer_rounded,
-                    color: theme.colorScheme.primary,
-                    size: 28,
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
+                      Text(
+                        _formatDateRange(session.startedAt, session.endedAt ?? session.startedAt),
+                        style: theme.textTheme.bodyMedium?.copyWith(
+                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
                       Text(
                         _formatDuration(session.totalDuration),
                         style: theme.textTheme.titleMedium?.copyWith(
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      const SizedBox(height: 6),
-                      Text(
-                        'Début: ${_formatDateTime(session.startedAt)}',
-                        style: theme.textTheme.bodyMedium?.copyWith(
-                          color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                        ),
-                      ),
-                      if (!session.isRunning)
-                        Padding(
-                          padding: const EdgeInsets.only(top: 4),
-                          child: Text(
-                            'Fin: ${_formatDateTime(session.endedAt ?? session.startedAt)}',
-                            style: theme.textTheme.bodyMedium?.copyWith(
-                              color: theme.colorScheme.onSurface.withValues(alpha: 0.7),
-                            ),
-                          ),
-                        ),
                       if (session.totalPauseDuration > 0)
                         Padding(
                           padding: const EdgeInsets.only(top: 6),
@@ -225,7 +202,18 @@ class SessionCard extends StatelessWidget {
     return '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
 
-  String _formatDateTime(DateTime dateTime) {
-    return '${dateTime.day.toString().padLeft(2, '0')}/${dateTime.month.toString().padLeft(2, '0')} ${dateTime.hour.toString().padLeft(2, '0')}:${dateTime.minute.toString().padLeft(2, '0')}';
+  String _formatDateRange(DateTime start, DateTime end) {
+    final startDate = '${start.day.toString().padLeft(2, '0')}/${start.month.toString().padLeft(2, '0')}/${start.year}';
+    final startTime = '${start.hour.toString().padLeft(2, '0')}:${start.minute.toString().padLeft(2, '0')}';
+    final endTime = '${end.hour.toString().padLeft(2, '0')}:${end.minute.toString().padLeft(2, '0')}';
+
+    // Si même jour
+    if (start.day == end.day && start.month == end.month && start.year == end.year) {
+      return '$startDate - $startTime à $endTime';
+    } else {
+      // Jours différents
+      final endDate = '${end.day.toString().padLeft(2, '0')}/${end.month.toString().padLeft(2, '0')}/${end.year}';
+      return '$startDate $startTime - $endDate $endTime';
+    }
   }
 }
