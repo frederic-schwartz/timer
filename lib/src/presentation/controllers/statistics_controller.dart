@@ -20,6 +20,22 @@ class CategoryStat {
   });
 }
 
+class TimePeriodStat {
+  final String label;
+  final Duration totalDuration;
+  final Duration totalPauseDuration;
+  final int sessionCount;
+  final int periodIndex; // 0-6 pour semaine, 0-30 pour mois, 0-11 pour année
+
+  TimePeriodStat({
+    required this.label,
+    required this.totalDuration,
+    required this.totalPauseDuration,
+    required this.sessionCount,
+    required this.periodIndex,
+  });
+}
+
 class StatisticsController extends ChangeNotifier {
   StatisticsController({AppDependencies? dependencies})
       : _dependencies = dependencies ?? AppDependencies.instance;
@@ -32,6 +48,7 @@ class StatisticsController extends ChangeNotifier {
   List<TimerSession> _allSessions = const []; // Toutes les sessions
   List<TimerSession> _filteredSessions = const []; // Sessions filtrées par période
   List<CategoryStat> _categoryStats = const [];
+  List<TimePeriodStat> _timePeriodStats = const [];
   Duration _totalDuration = Duration.zero;
   Duration _totalPauseDuration = Duration.zero;
 
@@ -39,6 +56,7 @@ class StatisticsController extends ChangeNotifier {
   TimePeriod get selectedPeriod => _selectedPeriod;
   DateTime get currentPeriodDate => _currentPeriodDate;
   List<CategoryStat> get categoryStats => _categoryStats;
+  List<TimePeriodStat> get timePeriodStats => _timePeriodStats;
   Duration get totalDuration => _totalDuration;
   Duration get totalPauseDuration => _totalPauseDuration;
 
@@ -56,11 +74,13 @@ class StatisticsController extends ChangeNotifier {
 
       _filterSessionsByPeriod();
       _calculateCategoryStats();
+      _calculateTimePeriodStats();
       _calculateTotals();
     } catch (_) {
       _allSessions = const [];
       _filteredSessions = const [];
       _categoryStats = const [];
+      _timePeriodStats = const [];
       _totalDuration = Duration.zero;
       _totalPauseDuration = Duration.zero;
     }
@@ -75,6 +95,7 @@ class StatisticsController extends ChangeNotifier {
       _currentPeriodDate = DateTime.now(); // Reset à la période courante
       _filterSessionsByPeriod();
       _calculateCategoryStats();
+      _calculateTimePeriodStats();
       _calculateTotals();
       notifyListeners();
     }
@@ -102,6 +123,7 @@ class StatisticsController extends ChangeNotifier {
     _currentPeriodDate = newDate;
     _filterSessionsByPeriod();
     _calculateCategoryStats();
+    _calculateTimePeriodStats();
     _calculateTotals();
     notifyListeners();
   }
@@ -128,6 +150,7 @@ class StatisticsController extends ChangeNotifier {
     _currentPeriodDate = newDate;
     _filterSessionsByPeriod();
     _calculateCategoryStats();
+    _calculateTimePeriodStats();
     _calculateTotals();
     notifyListeners();
   }
@@ -244,6 +267,120 @@ class StatisticsController extends ChangeNotifier {
 
     _categoryStats = statsMap.values.toList()
       ..sort((a, b) => b.totalDuration.compareTo(a.totalDuration));
+  }
+
+  void _calculateTimePeriodStats() {
+    switch (_selectedPeriod) {
+      case TimePeriod.daily:
+        // Pour le mode jour, on ne montre rien de spécial (ou on peut montrer les heures)
+        _timePeriodStats = const [];
+        break;
+      case TimePeriod.weekly:
+        _calculateWeeklyStats();
+        break;
+      case TimePeriod.monthly:
+        _calculateMonthlyStats();
+        break;
+      case TimePeriod.yearly:
+        _calculateYearlyStats();
+        break;
+    }
+  }
+
+  void _calculateWeeklyStats() {
+    final Map<int, TimePeriodStat> statsMap = {};
+    final weekdays = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+
+    // Initialiser tous les jours de la semaine à 0
+    for (int i = 0; i < 7; i++) {
+      statsMap[i] = TimePeriodStat(
+        label: weekdays[i],
+        totalDuration: Duration.zero,
+        totalPauseDuration: Duration.zero,
+        sessionCount: 0,
+        periodIndex: i,
+      );
+    }
+
+    // Calculer les stats pour chaque session
+    for (final session in _filteredSessions) {
+      final weekdayIndex = session.startedAt.weekday - 1; // 0=lundi, 6=dimanche
+      final existing = statsMap[weekdayIndex]!;
+
+      statsMap[weekdayIndex] = TimePeriodStat(
+        label: existing.label,
+        totalDuration: existing.totalDuration + session.totalDuration,
+        totalPauseDuration: existing.totalPauseDuration + Duration(milliseconds: session.totalPauseDuration),
+        sessionCount: existing.sessionCount + 1,
+        periodIndex: weekdayIndex,
+      );
+    }
+
+    _timePeriodStats = List.from(statsMap.values);
+  }
+
+  void _calculateMonthlyStats() {
+    final Map<int, TimePeriodStat> statsMap = {};
+    final (startDate, endDate) = _getPeriodRange(_currentPeriodDate);
+    final daysInMonth = DateTime(startDate.year, startDate.month + 1, 0).day;
+
+    // Initialiser tous les jours du mois à 0
+    for (int i = 1; i <= daysInMonth; i++) {
+      statsMap[i] = TimePeriodStat(
+        label: i.toString(),
+        totalDuration: Duration.zero,
+        totalPauseDuration: Duration.zero,
+        sessionCount: 0,
+        periodIndex: i - 1, // 0-indexed pour les graphiques
+      );
+    }
+
+    // Calculer les stats pour chaque session
+    for (final session in _filteredSessions) {
+      final dayOfMonth = session.startedAt.day;
+      final existing = statsMap[dayOfMonth]!;
+
+      statsMap[dayOfMonth] = TimePeriodStat(
+        label: existing.label,
+        totalDuration: existing.totalDuration + session.totalDuration,
+        totalPauseDuration: existing.totalPauseDuration + Duration(milliseconds: session.totalPauseDuration),
+        sessionCount: existing.sessionCount + 1,
+        periodIndex: dayOfMonth - 1,
+      );
+    }
+
+    _timePeriodStats = List.generate(daysInMonth, (i) => statsMap[i + 1]!);
+  }
+
+  void _calculateYearlyStats() {
+    final Map<int, TimePeriodStat> statsMap = {};
+
+    // Initialiser tous les mois de l'année à 0
+    for (int i = 0; i < 12; i++) {
+      statsMap[i] = TimePeriodStat(
+        label: (i + 1).toString(), // 1, 2, 3, ..., 12
+        totalDuration: Duration.zero,
+        totalPauseDuration: Duration.zero,
+        sessionCount: 0,
+        periodIndex: i,
+      );
+    }
+
+    // Calculer les stats pour chaque session
+    for (final session in _filteredSessions) {
+      final monthIndex = session.startedAt.month - 1; // 0=janvier, 11=décembre
+      final existing = statsMap[monthIndex]!;
+
+      statsMap[monthIndex] = TimePeriodStat(
+        label: existing.label,
+        totalDuration: existing.totalDuration + session.totalDuration,
+        totalPauseDuration: existing.totalPauseDuration + Duration(milliseconds: session.totalPauseDuration),
+        sessionCount: existing.sessionCount + 1,
+        periodIndex: monthIndex,
+      );
+    }
+
+    _timePeriodStats = List.from(statsMap.values);
   }
 
   void _calculateTotals() {

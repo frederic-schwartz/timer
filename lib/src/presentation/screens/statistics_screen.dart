@@ -44,6 +44,20 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   double _getMaxValue() {
+    // Utiliser les statistiques temporelles si disponibles, sinon les catégories
+    if (_controller.timePeriodStats.isNotEmpty) {
+      double maxValue = 0.0;
+      for (final stat in _controller.timePeriodStats) {
+        final activeHours = stat.totalDuration.inMinutes / 60.0;
+        final pauseHours = stat.totalPauseDuration.inMinutes / 60.0;
+        final maxForPeriod = activeHours > pauseHours ? activeHours : pauseHours;
+        if (maxForPeriod > maxValue) {
+          maxValue = maxForPeriod;
+        }
+      }
+      return maxValue * 1.1;
+    }
+
     if (_controller.categoryStats.isEmpty) return 1.0;
 
     double maxValue = 0.0;
@@ -224,9 +238,11 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
   }
 
   Widget _buildChart(ThemeData theme) {
-    final categoryStats = _controller.categoryStats;
+    // Prioriser les statistiques temporelles si disponibles
+    final useTimePeriodStats = _controller.timePeriodStats.isNotEmpty;
+    final hasData = useTimePeriodStats || _controller.categoryStats.isNotEmpty;
 
-    if (categoryStats.isEmpty) {
+    if (!hasData) {
       return Card(
         child: Padding(
           padding: const EdgeInsets.all(32.0),
@@ -234,7 +250,7 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
             child: Column(
               children: [
                 Icon(
-                  Icons.pie_chart_outline,
+                  Icons.bar_chart_outlined,
                   size: 48,
                   color: theme.colorScheme.onSurface.withValues(alpha: 0.3),
                 ),
@@ -251,6 +267,177 @@ class _StatisticsScreenState extends State<StatisticsScreen> {
         ),
       );
     }
+
+    return useTimePeriodStats ? _buildTimePeriodChart(theme) : _buildCategoryChart(theme);
+  }
+
+  Widget _buildTimePeriodChart(ThemeData theme) {
+    final timePeriodStats = _controller.timePeriodStats;
+    String chartTitle;
+
+    switch (_controller.selectedPeriod) {
+      case TimePeriod.weekly:
+        chartTitle = 'Répartition par jour de la semaine';
+        break;
+      case TimePeriod.monthly:
+        chartTitle = 'Répartition par jour du mois';
+        break;
+      case TimePeriod.yearly:
+        chartTitle = 'Répartition par mois';
+        break;
+      default:
+        chartTitle = 'Répartition';
+    }
+
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              chartTitle,
+              style: theme.textTheme.titleMedium?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              height: 300,
+              child: BarChart(
+                BarChartData(
+                  alignment: BarChartAlignment.spaceEvenly,
+                  maxY: _getMaxValue(),
+                  barTouchData: BarTouchData(
+                    touchTooltipData: BarTouchTooltipData(
+                      getTooltipItem: (group, groupIndex, rod, rodIndex) {
+                        if (groupIndex >= timePeriodStats.length) return null;
+
+                        final stat = timePeriodStats[groupIndex];
+                        final isActiveTime = rodIndex == 0;
+                        final duration = isActiveTime ? stat.totalDuration : stat.totalPauseDuration;
+                        return BarTooltipItem(
+                          '${stat.label}\n${isActiveTime ? 'Temps actif' : 'Temps de pause'}: ${_formatDuration(duration)}\n${stat.sessionCount} session${stat.sessionCount > 1 ? 's' : ''}',
+                          TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  titlesData: FlTitlesData(
+                    show: true,
+                    bottomTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          final index = value.toInt();
+                          if (index >= 0 && index < timePeriodStats.length) {
+                            // Pour les statistiques mensuelles, n'afficher qu'un jour sur 2
+                            if (_controller.selectedPeriod == TimePeriod.monthly) {
+                              final dayNumber = int.tryParse(timePeriodStats[index].label) ?? 0;
+                              if (dayNumber % 2 == 0) {
+                                return Text(''); // Ne pas afficher les jours pairs
+                              }
+                            }
+
+                            return Padding(
+                              padding: const EdgeInsets.only(top: 8.0),
+                              child: Text(
+                                timePeriodStats[index].label,
+                                style: theme.textTheme.bodySmall,
+                                textAlign: TextAlign.center,
+                              ),
+                            );
+                          }
+                          return Text('');
+                        },
+                        reservedSize: 40,
+                      ),
+                    ),
+                    leftTitles: AxisTitles(
+                      sideTitles: SideTitles(
+                        showTitles: true,
+                        getTitlesWidget: (value, meta) {
+                          return Text(
+                            '${value.toInt()}h',
+                            style: theme.textTheme.bodySmall,
+                          );
+                        },
+                        reservedSize: 40,
+                      ),
+                    ),
+                    topTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                    rightTitles: AxisTitles(sideTitles: SideTitles(showTitles: false)),
+                  ),
+                  borderData: FlBorderData(show: false),
+                  barGroups: timePeriodStats.asMap().entries.map((entry) {
+                    final index = entry.key;
+                    final stat = entry.value;
+
+                    return BarChartGroupData(
+                      x: index,
+                      barRods: [
+                        BarChartRodData(
+                          toY: stat.totalDuration.inMinutes / 60.0, // Convertir en heures
+                          color: theme.colorScheme.primary,
+                          width: _getBarWidth(),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(4),
+                            topRight: Radius.circular(4),
+                          ),
+                        ),
+                        BarChartRodData(
+                          toY: stat.totalPauseDuration.inMinutes / 60.0, // Convertir en heures
+                          color: theme.colorScheme.primary.withValues(alpha: 0.4),
+                          width: _getBarWidth(),
+                          borderRadius: BorderRadius.only(
+                            topLeft: Radius.circular(4),
+                            topRight: Radius.circular(4),
+                          ),
+                        ),
+                      ],
+                    );
+                  }).toList(),
+                  gridData: FlGridData(
+                    show: true,
+                    drawVerticalLine: false,
+                    horizontalInterval: 1,
+                    getDrawingHorizontalLine: (value) {
+                      return FlLine(
+                        color: theme.colorScheme.onSurface.withValues(alpha: 0.1),
+                        strokeWidth: 1,
+                      );
+                    },
+                  ),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _buildLegend(theme),
+          ],
+        ),
+      ),
+    );
+  }
+
+  double _getBarWidth() {
+    // Ajuster la largeur des barres selon le nombre d'éléments
+    switch (_controller.selectedPeriod) {
+      case TimePeriod.weekly:
+        return 16.0; // Réduire pour éviter le chevauchement
+      case TimePeriod.monthly:
+        return 4.0; // Très fin pour les 30+ jours
+      case TimePeriod.yearly:
+        return 10.0; // Encore plus fin pour éviter le chevauchement
+      default:
+        return 16.0;
+    }
+  }
+
+  Widget _buildCategoryChart(ThemeData theme) {
+    final categoryStats = _controller.categoryStats;
 
     return Card(
       child: Padding(
