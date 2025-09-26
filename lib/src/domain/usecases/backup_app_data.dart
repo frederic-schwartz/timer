@@ -1,5 +1,7 @@
+import 'package:flutter/foundation.dart';
+
 import '../../core/backup/icloud_backup_service.dart';
-import '../entities/category.dart';
+import '../entities/category.dart' as entities;
 import '../entities/timer_session.dart';
 import '../repositories/category_repository.dart';
 import '../repositories/session_repository.dart';
@@ -19,24 +21,46 @@ class BackupAppData {
   final ICloudBackupService _icloudBackupService;
 
   Future<void> call() async {
-    final sessions = await _sessionRepository.getAllSessions();
-    final categories = await _categoryRepository.getAllCategories();
-    final recentSessionsCount = await _settingsRepository.getRecentSessionsCount();
+    if (kDebugMode) {
+      print('🔒 BackupAppData: Début de la sauvegarde');
+    }
 
-    final payload = {
-      'version': 1,
-      'generatedAt': DateTime.now().toUtc().toIso8601String(),
-      'settings': {
-        'recentSessionsCount': recentSessionsCount,
-      },
-      'categories': categories.map(_categoryToMap).toList(),
-      'sessions': sessions.map(_sessionToMap).toList(),
-    };
+    try {
+      final sessions = await _sessionRepository.getAllSessions();
+      final categories = await _categoryRepository.getAllCategories();
+      final recentSessionsCount = await _settingsRepository.getRecentSessionsCount();
+      final wakeLockEnabled = await _settingsRepository.getWakeLockEnabled();
 
-    await _icloudBackupService.saveBackup(payload);
+      if (kDebugMode) {
+        print('🔒 BackupAppData: Données récupérées - ${sessions.length} sessions, ${categories.length} catégories');
+        print('🔒 BackupAppData: Settings - recentSessionsCount: $recentSessionsCount, wakeLockEnabled: $wakeLockEnabled');
+      }
+
+      final payload = {
+        'version': 2, // Incrémenté pour inclure wakeLockEnabled
+        'generatedAt': DateTime.now().toUtc().toIso8601String(),
+        'settings': {
+          'recentSessionsCount': recentSessionsCount,
+          'wakeLockEnabled': wakeLockEnabled,
+        },
+        'categories': categories.map(_categoryToMap).toList(),
+        'sessions': sessions.map(_sessionToMap).toList(),
+      };
+
+      await _icloudBackupService.saveBackup(payload);
+
+      if (kDebugMode) {
+        print('🔒 BackupAppData: Sauvegarde terminée avec succès');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('🔒 BackupAppData: Erreur lors de la sauvegarde - $e');
+      }
+      rethrow;
+    }
   }
 
-  Map<String, dynamic> _categoryToMap(Category category) {
+  Map<String, dynamic> _categoryToMap(entities.Category category) {
     return {
       'id': category.id,
       'name': category.name,
