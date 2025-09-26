@@ -11,4 +11,10 @@ class SettingsRepositoryImpl implements SettingsRepository {
 
   @override
   Future<void> setRecentSessionsCount(int count) => _localDataSource.setRecentSessionsCount(count);
+
+  @override
+  Future<bool> getWakeLockEnabled() => _localDataSource.getWakeLockEnabled();
+
+  @override
+  Future<void> setWakeLockEnabled(bool enabled) => _localDataSource.setWakeLockEnabled(enabled);
 }

@@ -14,10 +14,12 @@ class SettingsController extends ChangeNotifier {
 
   int _recentSessionsCount = 10;
   bool _isLoading = true;
+  bool _wakeLockEnabled = false;
   List<entities.Category> _categories = const [];
 
   int get recentSessionsCount => _recentSessionsCount;
   bool get isLoading => _isLoading;
+  bool get wakeLockEnabled => _wakeLockEnabled;
   List<entities.Category> get categories => _categories;
 
   Future<void> initialize() async {
@@ -25,6 +27,7 @@ class SettingsController extends ChangeNotifier {
     notifyListeners();
 
     _recentSessionsCount = await _dependencies.getRecentSessionsCount();
+    _wakeLockEnabled = await _dependencies.getWakeLockEnabled();
     await _loadCategories();
 
     _isLoading = false;
@@ -89,6 +92,18 @@ class SettingsController extends ChangeNotifier {
       notifyListeners();
     } catch (_) {
       // Ignorer les erreurs
+    }
+  }
+
+  Future<void> setWakeLockEnabled(bool enabled) async {
+    try {
+      _wakeLockEnabled = enabled;
+      notifyListeners();
+      await _dependencies.setWakeLockEnabled(enabled);
+    } catch (_) {
+      // En cas d'erreur, rétablir l'état précédent
+      _wakeLockEnabled = !enabled;
+      notifyListeners();
     }
   }
 }

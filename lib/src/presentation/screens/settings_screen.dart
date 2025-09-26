@@ -234,6 +234,33 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             ),
                           ),
                           const SizedBox(height: 12),
+                          ListTile(
+                            contentPadding: EdgeInsets.zero,
+                            leading: Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: theme.colorScheme.primary.withValues(
+                                  alpha: 0.15,
+                                ),
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                              child: Icon(
+                                Icons.screen_lock_portrait,
+                                color: theme.colorScheme.primary,
+                              ),
+                            ),
+                            title: const Text('Écran toujours actif'),
+                            subtitle: const Text(
+                              'Empêche l\'écran de se mettre en veille durant les sessions',
+                            ),
+                            trailing: Switch(
+                              value: _controller.wakeLockEnabled,
+                              onChanged: (value) {
+                                _controller.setWakeLockEnabled(value);
+                              },
+                            ),
+                          ),
+                          const SizedBox(height: 12),
                           if (Platform.isIOS) ...[
                             ListTile(
                               contentPadding: EdgeInsets.zero,

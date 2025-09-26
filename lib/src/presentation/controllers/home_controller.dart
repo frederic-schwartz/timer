@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/foundation.dart';
+import 'package:wakelock_plus/wakelock_plus.dart';
 
 import '../../dependency_injection/service_locator.dart';
 import '../../domain/entities/category.dart' as entities;
@@ -16,6 +17,7 @@ class HomeController extends ChangeNotifier {
 
   bool _isInitialized = false;
   bool _isLoading = true;
+  bool _wakeLockEnabled = false;
   Duration _currentDuration = Duration.zero;
   Duration _totalPauseRealTime = Duration.zero;
   Duration _totalPause = Duration.zero;
@@ -45,12 +47,15 @@ class HomeController extends ChangeNotifier {
     _isInitialized = true;
 
     await _dependencies.initializeTimer();
+    _wakeLockEnabled = await _dependencies.getWakeLockEnabled();
+
     _durationSubscription = _dependencies.watchTimerDuration().listen((_) {
       _updateSnapshot(notify: true);
     });
     _stateSubscription = _dependencies.watchTimerState().listen((state) async {
       _currentState = state;
       _updateSnapshot(notify: true);
+      await _manageWakeLock(state);
       if (state == TimerState.finished) {
         await loadRecentSessions();
       }
@@ -62,6 +67,9 @@ class HomeController extends ChangeNotifier {
 
     // Récupérer catégorie et libellé de la session courante si elle existe
     await _loadCurrentSessionData();
+
+    // Gérer le wake lock initial
+    await _manageWakeLock(_currentState);
 
     _isLoading = false;
     notifyListeners();
@@ -87,25 +95,27 @@ class HomeController extends ChangeNotifier {
       label: _selectedLabel,
     );
     _updateSnapshot();
+    await _manageWakeLock(_currentState);
   }
 
   Future<void> pauseTimer() async {
     await _dependencies.pauseTimer();
     _updateSnapshot();
+    await _manageWakeLock(_currentState);
   }
-
 
   Future<void> stopTimer() async {
     await _dependencies.stopTimer();
     _updateSnapshot();
+    await _manageWakeLock(_currentState);
   }
-
 
   Future<void> resetTimer() async {
     await _dependencies.resetTimer();
     _selectedCategory = null;
     _selectedLabel = null;
     _updateSnapshot();
+    await _manageWakeLock(_currentState);
   }
 
   Future<void> deleteSession(int sessionId) async {
@@ -169,10 +179,49 @@ class HomeController extends ChangeNotifier {
     }
   }
 
+  Future<void> updateWakeLockSetting() async {
+    try {
+      _wakeLockEnabled = await _dependencies.getWakeLockEnabled();
+      await _manageWakeLock(_currentState);
+    } catch (_) {
+      // Ignorer les erreurs
+    }
+  }
+
+  Future<void> _manageWakeLock(TimerState state) async {
+    if (!_wakeLockEnabled) {
+      // Si le wake lock n'est pas activé, s'assurer qu'il est désactivé
+      try {
+        if (await WakelockPlus.enabled) {
+          await WakelockPlus.disable();
+        }
+      } catch (_) {
+        // Ignorer les erreurs
+      }
+      return;
+    }
+
+    try {
+      if (state == TimerState.running) {
+        // Activer le wake lock quand le timer tourne
+        await WakelockPlus.enable();
+      } else {
+        // Désactiver le wake lock quand le timer est pausé ou arrêté
+        if (await WakelockPlus.enabled) {
+          await WakelockPlus.disable();
+        }
+      }
+    } catch (_) {
+      // Ignorer les erreurs de wake lock
+    }
+  }
+
   @override
   void dispose() {
     _durationSubscription?.cancel();
     _stateSubscription?.cancel();
+    // S'assurer que le wake lock est désactivé lors de la destruction
+    WakelockPlus.disable().catchError((_) {});
     super.dispose();
   }
 }

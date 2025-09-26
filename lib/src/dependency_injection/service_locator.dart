@@ -20,11 +20,13 @@ import '../domain/usecases/get_all_sessions.dart';
 import '../domain/usecases/get_category_by_id.dart';
 import '../domain/usecases/get_recent_sessions_count.dart';
 import '../domain/usecases/get_timer_snapshot.dart';
+import '../domain/usecases/get_wake_lock_enabled.dart';
 import '../domain/usecases/initialize_timer.dart';
 import '../domain/usecases/insert_category.dart';
 import '../domain/usecases/pause_timer.dart';
 import '../domain/usecases/reset_timer.dart';
 import '../domain/usecases/set_recent_sessions_count.dart';
+import '../domain/usecases/set_wake_lock_enabled.dart';
 import '../domain/usecases/start_timer.dart';
 import '../domain/usecases/stop_timer.dart';
 import '../domain/usecases/update_category.dart';
@@ -68,6 +70,8 @@ class AppDependencies {
 
   late final GetRecentSessionsCount getRecentSessionsCount;
   late final SetRecentSessionsCount setRecentSessionsCount;
+  late final GetWakeLockEnabled getWakeLockEnabled;
+  late final SetWakeLockEnabled setWakeLockEnabled;
 
   late final GetAllCategories getAllCategories;
   late final InsertCategory insertCategory;
@@ -105,6 +109,8 @@ class AppDependencies {
 
     getRecentSessionsCount = GetRecentSessionsCount(settingsRepository);
     setRecentSessionsCount = SetRecentSessionsCount(settingsRepository);
+    getWakeLockEnabled = GetWakeLockEnabled(settingsRepository);
+    setWakeLockEnabled = SetWakeLockEnabled(settingsRepository);
 
     getAllCategories = GetAllCategories(categoryRepository);
     insertCategory = InsertCategory(categoryRepository);
