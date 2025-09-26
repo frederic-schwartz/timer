@@ -3,7 +3,9 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'src/presentation/screens/home_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
   runApp(const MyApp());
 }
 

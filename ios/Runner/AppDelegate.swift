@@ -25,6 +25,8 @@ import UIKit
             return
           }
           self.saveBackupToICloud(data: data, result: result)
+        case "loadBackup":
+          self.loadBackupFromICloud(result: result)
         default:
           result(FlutterMethodNotImplemented)
         }
@@ -33,6 +35,28 @@ import UIKit
 
     GeneratedPluginRegistrant.register(with: self)
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
+  }
+
+  private func loadBackupFromICloud(result: FlutterResult) {
+    guard let containerURL = FileManager.default.url(forUbiquityContainerIdentifier: icloudContainerIdentifier) else {
+      result(FlutterError(code: "no_container", message: "Impossible d\'accéder au conteneur iCloud.", details: nil))
+      return
+    }
+
+    let documentsURL = containerURL.appendingPathComponent("Documents")
+    let latestURL = documentsURL.appendingPathComponent("timer_backup_latest.json")
+
+    do {
+      guard FileManager.default.fileExists(atPath: latestURL.path) else {
+        result(nil)
+        return
+      }
+
+      let data = try String(contentsOf: latestURL, encoding: .utf8)
+      result(data)
+    } catch {
+      result(FlutterError(code: "read_error", message: error.localizedDescription, details: nil))
+    }
   }
 
   private func saveBackupToICloud(data: String, result: FlutterResult) {

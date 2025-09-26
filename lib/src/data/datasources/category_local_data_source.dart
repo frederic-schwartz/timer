@@ -16,6 +16,11 @@ class CategoryLocalDataSource {
     return _database!;
   }
 
+  /// Force l'initialisation de la base de données
+  Future<void> ensureInitialized() async {
+    await _db;
+  }
+
   Future<Database> _initDatabase() async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, 'timer.db');

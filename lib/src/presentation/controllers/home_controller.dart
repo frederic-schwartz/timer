@@ -47,6 +47,12 @@ class HomeController extends ChangeNotifier {
     _isInitialized = true;
 
     await _dependencies.initializeTimer();
+
+    // Tentative de restauration depuis iCloud après l'initialisation de la base
+    final restored = await _dependencies.restoreAppData.call();
+    if (restored && kDebugMode) {
+      print('🔒 Données restaurées depuis iCloud');
+    }
     _wakeLockEnabled = await _dependencies.getWakeLockEnabled();
     if (kDebugMode) {
       print('🔒 Wake lock setting loaded: $_wakeLockEnabled');

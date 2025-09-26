@@ -12,6 +12,7 @@ import '../domain/repositories/session_repository.dart';
 import '../domain/repositories/settings_repository.dart';
 import '../domain/repositories/timer_repository.dart';
 import '../domain/usecases/backup_app_data.dart';
+import '../domain/usecases/restore_app_data.dart';
 import '../domain/usecases/clear_completed_sessions.dart';
 import '../domain/usecases/delete_category.dart';
 import '../domain/usecases/delete_session.dart';
@@ -79,6 +80,7 @@ class AppDependencies {
   late final DeleteCategory deleteCategory;
   late final GetCategoryById getCategoryById;
   late final BackupAppData backupAppData;
+  late final RestoreAppData restoreAppData;
 
   void _configure() {
     _categoryLocalDataSource = CategoryLocalDataSource();
@@ -123,6 +125,15 @@ class AppDependencies {
       categoryRepository,
       settingsRepository,
       _icloudBackupService,
+    );
+
+    restoreAppData = RestoreAppData(
+      _icloudBackupService,
+      sessionRepository,
+      categoryRepository,
+      settingsRepository,
+      _sessionLocalDataSource,
+      _categoryLocalDataSource,
     );
   }
 
