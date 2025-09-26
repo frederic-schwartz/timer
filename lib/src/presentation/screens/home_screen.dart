@@ -265,6 +265,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               );
               await _controller.loadRecentSessions();
+              await _controller.updateWakeLockSetting();
             },
           ),
           ListTile(

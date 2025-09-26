@@ -48,6 +48,9 @@ class HomeController extends ChangeNotifier {
 
     await _dependencies.initializeTimer();
     _wakeLockEnabled = await _dependencies.getWakeLockEnabled();
+    if (kDebugMode) {
+      print('🔒 Wake lock setting loaded: $_wakeLockEnabled');
+    }
 
     _durationSubscription = _dependencies.watchTimerDuration().listen((_) {
       _updateSnapshot(notify: true);
@@ -189,14 +192,19 @@ class HomeController extends ChangeNotifier {
   }
 
   Future<void> _manageWakeLock(TimerState state) async {
+    if (kDebugMode) {
+      print('🔒 Wake lock management: enabled=$_wakeLockEnabled, state=$state');
+    }
+
     if (!_wakeLockEnabled) {
       // Si le wake lock n'est pas activé, s'assurer qu'il est désactivé
       try {
         if (await WakelockPlus.enabled) {
           await WakelockPlus.disable();
+          if (kDebugMode) print('🔒 Wake lock disabled (setting OFF)');
         }
-      } catch (_) {
-        // Ignorer les erreurs
+      } catch (e) {
+        if (kDebugMode) print('🔒 Error disabling wake lock: $e');
       }
       return;
     }
@@ -205,14 +213,17 @@ class HomeController extends ChangeNotifier {
       if (state == TimerState.running) {
         // Activer le wake lock quand le timer tourne
         await WakelockPlus.enable();
+        final isEnabled = await WakelockPlus.enabled;
+        if (kDebugMode) print('🔒 Wake lock enabled: $isEnabled');
       } else {
         // Désactiver le wake lock quand le timer est pausé ou arrêté
         if (await WakelockPlus.enabled) {
           await WakelockPlus.disable();
+          if (kDebugMode) print('🔒 Wake lock disabled (timer not running)');
         }
       }
-    } catch (_) {
-      // Ignorer les erreurs de wake lock
+    } catch (e) {
+      if (kDebugMode) print('🔒 Error managing wake lock: $e');
     }
   }
 

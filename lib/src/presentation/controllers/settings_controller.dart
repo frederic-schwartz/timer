@@ -100,7 +100,13 @@ class SettingsController extends ChangeNotifier {
       _wakeLockEnabled = enabled;
       notifyListeners();
       await _dependencies.setWakeLockEnabled(enabled);
-    } catch (_) {
+      if (kDebugMode) {
+        print('🔒 Wake lock setting saved: $enabled');
+      }
+    } catch (e) {
+      if (kDebugMode) {
+        print('🔒 Error saving wake lock setting: $e');
+      }
       // En cas d'erreur, rétablir l'état précédent
       _wakeLockEnabled = !enabled;
       notifyListeners();
